@@ -52,6 +52,7 @@ Update `db.py` with your DB credentials
 ```bash
 python gui.py
 ```
+---
 
 ## 📂 Folder Structure
 │
@@ -60,6 +61,8 @@ python gui.py
 ├── gui.py             # Tkinter GUI
 ├── wardrobe.sql       # DB schema
 ├── README.md
+
+---
 
 ## 🙋‍♂️ Author
 Walid Gouza – @WalidGouza
