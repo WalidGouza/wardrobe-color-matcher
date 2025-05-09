@@ -1,0 +1,15 @@
+# Python bytecode and cache
+__pycache__/
+*.pyc
+
+# Environment/config files
+.env
+
+# Database dump or generated data (if local)
+*.db
+
+# VSCode project settings
+.vscode/
+
+# Optional: SQL file if it's large/generated locally
+wardrobe.sql
