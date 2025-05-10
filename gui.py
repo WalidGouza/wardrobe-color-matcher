@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, scrolledtext
 from PIL import Image, ImageTk
 from collections import Counter
-from db import insert_clothing_item, fetch_wardrobe_items, delete_clothing_item, validate_user, create_user
+from db import insert_clothing_item, fetch_wardrobe_items, delete_clothing_item, validate_user, create_user, get_wardrobe_id
 from colors_test import generate_and_print_outfits, _closest_color_name
 
 WARDROBE_ID = 1  # Assuming default
@@ -63,6 +63,7 @@ def launch_gui(username):
     window.geometry("900x600")
 
     current_category = tk.StringVar(value="tops")
+    WARDROBE_ID = get_wardrobe_id(username)
 
     # Sidebar
     frame = tk.Frame(window)

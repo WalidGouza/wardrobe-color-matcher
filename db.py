@@ -14,6 +14,10 @@ def create_user(username, password):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, hashed))
+            user_id = cur.fetchone()[0]
+
+            # Create wardrobe
+            cur.execute("INSERT INTO wardrobe (user_id) VALUES (%s)", (user_id,))
 
 def validate_user(username, password):
     with get_connection() as conn:
@@ -23,6 +27,18 @@ def validate_user(username, password):
             if row and bcrypt.checkpw(password.encode(), row[0].encode()):
                 return True
     return False
+
+def get_wardrobe_id(username):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT w.id
+                FROM wardrobe w
+                JOIN users u ON w.user_id = u.id
+                WHERE u.username = %s
+            """, (username,))
+            row = cur.fetchone()
+            return row[0] if row else None
 
 
 def get_connection():
