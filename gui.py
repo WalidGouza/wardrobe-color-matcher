@@ -79,7 +79,7 @@ def launch_gui(username):
     tk.Label(frame, text="Delete Item ID:").pack(pady=(10, 0))
     delete_id_entry = tk.Entry(frame, width=10)
     delete_id_entry.pack()
-
+    
     def delete_item():
         try:
             item_id = int(delete_id_entry.get())
@@ -160,6 +160,12 @@ def launch_gui(username):
 
     tk.Button(frame, text="Generate Outfits", command=generate_outfits).pack(pady=10)
 
+    def logout():
+        window.destroy()
+        show_login_screen()
+        
+    tk.Button(frame, text="Logout", command=logout).pack(pady=5)
+    
     # Optional: manual click override
     def on_click(event):
         if hasattr(canvas, "img") and hasattr(canvas, "original_img"):
