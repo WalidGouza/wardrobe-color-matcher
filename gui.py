@@ -53,7 +53,8 @@ def show_login_screen():
     action_btn.pack(pady=10)
 
     tk.Button(login_win, text="Switch to Sign Up", command=switch_mode).pack()
-
+    tk.Button(login_win, text="Exit", command=login_win.destroy).pack(pady=10)
+    
     login_win.mainloop()
 
 
