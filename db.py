@@ -1,4 +1,5 @@
 import psycopg2
+import bcrypt
 
 DB_CONFIG = {
     'dbname': 'wardrobe_db',
@@ -7,6 +8,22 @@ DB_CONFIG = {
     'host': 'localhost',
     'port': '5432',
 }
+
+def create_user(username, password):
+    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, hashed))
+
+def validate_user(username, password):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT password FROM users WHERE username = %s", (username,))
+            row = cur.fetchone()
+            if row and bcrypt.checkpw(password.encode(), row[0].encode()):
+                return True
+    return False
+
 
 def get_connection():
     return psycopg2.connect(**DB_CONFIG)

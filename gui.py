@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, scrolledtext
 from PIL import Image, ImageTk
 from collections import Counter
-from db import insert_clothing_item, fetch_wardrobe_items, delete_clothing_item
+from db import insert_clothing_item, fetch_wardrobe_items, delete_clothing_item, validate_user, create_user
 from colors_test import generate_and_print_outfits, _closest_color_name
 
 WARDROBE_ID = 1  # Assuming default
@@ -13,7 +13,51 @@ def get_dominant_color(image, resize_to=(100, 100)):
     color_counts = Counter(pixels)
     return color_counts.most_common(1)[0][0]
 
-def launch_gui():
+def show_login_screen():
+    login_win = tk.Tk()
+    login_win.title("Login or Sign Up")
+    login_win.geometry("300x200")
+
+    mode = tk.StringVar(value="login")
+
+    tk.Label(login_win, text="Username").pack()
+    username_entry = tk.Entry(login_win)
+    username_entry.pack()
+
+    tk.Label(login_win, text="Password").pack()
+    password_entry = tk.Entry(login_win, show="*")
+    password_entry.pack()
+
+    def switch_mode():
+        mode.set("signup" if mode.get() == "login" else "login")
+        action_btn.config(text=mode.get().capitalize())
+
+    def submit():
+        username = username_entry.get()
+        password = password_entry.get()
+        if mode.get() == "login":
+            if validate_user(username, password):
+                login_win.destroy()
+                launch_gui(username)  # Start GUI with logged-in user
+            else:
+                tk.messagebox.showerror("Error", "Invalid credentials")
+        else:
+            try:
+                create_user(username, password)
+                tk.messagebox.showinfo("Success", "Account created. Please log in.")
+                switch_mode()
+            except:
+                tk.messagebox.showerror("Error", "Username already exists")
+
+    action_btn = tk.Button(login_win, text="Login", command=submit)
+    action_btn.pack(pady=10)
+
+    tk.Button(login_win, text="Switch to Sign Up", command=switch_mode).pack()
+
+    login_win.mainloop()
+
+
+def launch_gui(username):
     window = tk.Tk()
     window.title("Outfit Matcher")
     window.geometry("900x600")
@@ -51,7 +95,7 @@ def launch_gui():
     def view_wardrobe():
         wardrobe = fetch_wardrobe_items(WARDROBE_ID)
         output_text.delete(1.0, tk.END)
-        output_text.insert(tk.END, "👕 Current Wardrobe Contents:\n\n")
+        output_text.insert(tk.END, f"👕 {username.capitalize()}'s Current Wardrobe Contents:\n\n")
         for category, items in wardrobe.items():
             output_text.insert(tk.END, f"{category.capitalize()} ({len(items)}):\n")
             for item in items:
@@ -147,4 +191,4 @@ class StdoutRedirector(io.StringIO):
         pass
 
 if __name__ == '__main__':
-    launch_gui()
+    show_login_screen()
