@@ -83,28 +83,38 @@ def _closest_color_name(rgb):
         return closest_name
     
 # Generate combinations and print
-def generate_and_print_outfits(wardrobe):
+def generate_outfit_suggestions(wardrobe):
     
     tops = wardrobe.get("tops", [])
     pants = wardrobe.get("pants", [])
     shoes = wardrobe.get("shoes", [])
+    jackets = wardrobe.get("jacket", [])
     
     outfits = []
-    for top, pant, shoe in product(tops, pants, shoes):
-        score = _score_outfit(top, pant, shoe)
-        outfits.append((top, pant, shoe, score))
+    if not jackets:
+        jackets = [None]  # Jacket is optional
+
+    for top, pant, shoe, jacket in product(tops, pants, shoes, jackets):
+        colors = [top, pant, shoe] + ([jacket] if jacket else [])
+        score = _score_outfit(*colors)
+        if score > 2.50:
+            outfits.append((top, pant, shoe, score, jacket))
 
     # Sort outfits by score
     outfits.sort(key=lambda x: x[3], reverse=True)
+    return outfits
 
-    print("Top Outfit Matches:")
-    for top, pant, shoe, score in outfits:
-        if score <= MIN_ACCEPTABLE_SCORE:
-            continue
-        print(f"Top: {_closest_color_name(top)} | "
-            f"Pants: {_closest_color_name(pant)} | "
-            f"Shoes: {_closest_color_name(shoe)} | "
-            f"Score: {round(score, 2)}")
+    # print("Top Outfit Matches:")
+    # for top, pant, shoe, jacket, score in outfits:
+    #     if score <= MIN_ACCEPTABLE_SCORE:
+    #         continue
+    #     output_text = (f"Top: {_closest_color_name(top)} | "
+    #         f"Pants: {_closest_color_name(pant)} | "
+    #         f"Shoes: {_closest_color_name(shoe)} | "
+    #         f"Jacket: {_closest_color_name(jacket)} | "
+    #         f"Score: {round(score, 2)}")
+
+    # return output_text
 
 def suggest_outfit_for_item(user_input, wardrobe):
     if len(user_input) != 1:

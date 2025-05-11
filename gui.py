@@ -1,202 +1,217 @@
 import tkinter as tk
-from tkinter import filedialog, scrolledtext
-from PIL import Image, ImageTk
-from collections import Counter
-from db import insert_clothing_item, fetch_wardrobe_items, delete_clothing_item, validate_user, create_user, get_wardrobe_id
-from colors_test import generate_and_print_outfits, _closest_color_name
+from tkinter import filedialog
+from PIL import Image
+from db import *
+from colors_test import generate_outfit_suggestions, _closest_color_name
 
-WARDROBE_ID = 1  # Assuming default
+class WardrobeApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Outfit Matcher for Colorblind Users")
+        self.root.geometry("600x700")
+        self.root.configure(padx=20, pady=20)
 
-def get_dominant_color(image, resize_to=(100, 100)):
-    small_img = image.resize(resize_to)
-    pixels = list(small_img.getdata())
-    color_counts = Counter(pixels)
-    return color_counts.most_common(1)[0][0]
+        self.username_entry = tk.Entry(root, font=("Arial", 14))
+        self.password_entry = tk.Entry(root, show="*", font=("Arial", 14))
+        self.auth_button = tk.Button(root, text="Login", font=("Arial", 12), command=self.authenticate)
+        self.toggle_mode_button = tk.Button(root, text="Switch to Sign Up", font=("Arial", 12), command=self.toggle_mode)
 
-def show_login_screen():
-    login_win = tk.Tk()
-    login_win.title("Login or Sign Up")
-    login_win.geometry("300x200")
+        self.mode = "login"  # or "signup"
 
-    mode = tk.StringVar(value="login")
+        tk.Label(root, text="Username", font=("Arial", 12)).pack(pady=5)
+        self.username_entry.pack(pady=5, fill="x")
+        tk.Label(root, text="Password", font=("Arial", 12)).pack(pady=5)
+        self.password_entry.pack(pady=5, fill="x")
+        self.auth_button.pack(pady=10)
+        self.toggle_mode_button.pack(pady=5)
 
-    tk.Label(login_win, text="Username").pack()
-    username_entry = tk.Entry(login_win)
-    username_entry.pack()
+        self.wardrobe = {}
+        self.current_user = None
+        self.wardrobe_id = None
 
-    tk.Label(login_win, text="Password").pack()
-    password_entry = tk.Entry(login_win, show="*")
-    password_entry.pack()
+    def toggle_mode(self):
+        self.mode = "signup" if self.mode == "login" else "login"
+        self.auth_button.config(text="Sign Up" if self.mode == "signup" else "Login")
+        self.toggle_mode_button.config(text="Switch to Login" if self.mode == "signup" else "Switch to Sign Up")
 
-    def switch_mode():
-        mode.set("signup" if mode.get() == "login" else "login")
-        action_btn.config(text=mode.get().capitalize())
-
-    def submit():
-        username = username_entry.get()
-        password = password_entry.get()
-        if mode.get() == "login":
+    def authenticate(self):
+        username = self.username_entry.get()
+        password = self.password_entry.get()
+        if self.mode == "login":
             if validate_user(username, password):
-                login_win.destroy()
-                launch_gui(username)  # Start GUI with logged-in user
-            else:
-                tk.messagebox.showerror("Error", "Invalid credentials")
+                self.current_user = username
+                self.wardrobe_id = get_wardrobe_id(username)
+                self.load_main_ui()
         else:
-            try:
-                create_user(username, password)
-                tk.messagebox.showinfo("Success", "Account created. Please log in.")
-                switch_mode()
-            except:
-                tk.messagebox.showerror("Error", "Username already exists")
+            create_user(username, password)
+            self.current_user = username
+            self.wardrobe_id = get_wardrobe_id(username)
+            self.load_main_ui()
 
-    action_btn = tk.Button(login_win, text="Login", command=submit)
-    action_btn.pack(pady=10)
+    def load_main_ui(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
-    tk.Button(login_win, text="Switch to Sign Up", command=switch_mode).pack()
-    tk.Button(login_win, text="Exit", command=login_win.destroy).pack(pady=10)
-    
-    login_win.mainloop()
+        tk.Label(self.root, text="Delete Item ID:").pack(pady=(10, 0))
+        self.delete_id_entry = tk.Entry(self.root, width=10)
+        self.delete_id_entry.pack()
+        tk.Button(self.root, text="Delete Item", font=("Arial", 12), command=self.delete_item).pack(pady=5, fill="x")
+        tk.Button(self.root, text="Upload Item", font=("Arial", 12), command=self.upload_item).pack(pady=10, fill="x")
+        tk.Button(self.root, text="Generate Outfits", font=("Arial", 12), command=self.show_outfit_suggestions).pack(pady=10, fill="x")
+        tk.Button(self.root, text="View Saved Outfits", font=("Arial", 12), command=self.view_saved_outfits).pack(pady=10, fill="x")
 
+        self.wardrobe_display = tk.Text(self.root, height=10, width=50, font=("Courier", 11))
+        self.wardrobe_display.pack(pady=10)
 
-def launch_gui(username):
-    window = tk.Tk()
-    window.title("Outfit Matcher")
-    window.geometry("900x600")
+        self.outfit_frame = tk.Frame(self.root)
+        self.outfit_frame.pack(fill=tk.BOTH, expand=True)
 
-    current_category = tk.StringVar(value="tops")
-    WARDROBE_ID = get_wardrobe_id(username)
+        self.refresh_wardrobe_display()
 
-    # Sidebar
-    frame = tk.Frame(window)
-    frame.pack(side=tk.LEFT, fill=tk.Y)
+    def log(self, widget, message):
+        widget.insert(tk.END, message + "\n")
+        widget.see(tk.END)
 
-    tk.Label(frame, text="Select Clothing Type:").pack()
-    for category in ["tops", "pants", "shoes", "jackets"]:
-        tk.Radiobutton(frame, text=category.capitalize(), variable=current_category, value=category).pack(anchor=tk.W)
-
-    output_text = scrolledtext.ScrolledText(window, width=60, height=30)
-    output_text.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-
-    tk.Label(frame, text="Delete Item ID:").pack(pady=(10, 0))
-    delete_id_entry = tk.Entry(frame, width=10)
-    delete_id_entry.pack()
-    
-    def delete_item():
+    def delete_item(self):
         try:
-            item_id = int(delete_id_entry.get())
+            item_id = int(self.delete_id_entry.get())
             delete_clothing_item(item_id)
-            output_text.insert(tk.END, f"✅ Deleted item with ID {item_id}.\n")
-            delete_id_entry.delete(0, tk.END)
-            view_wardrobe()  # Refresh view
+            self.log(self.wardrobe_display, f"✅ Deleted item with ID {item_id}.")
+            self.delete_id_entry.delete(0, tk.END)
+            self.refresh_wardrobe_display()
+        except ValueError:
+            self.log(self.wardrobe_display, "❌ Please enter a valid integer ID.")
         except Exception as e:
-            output_text.insert(tk.END, f"⚠️ Error deleting item: {e}\n")
-
-    tk.Button(frame, text="Delete Item", command=delete_item).pack(pady=5)
-
+            self.log(self.wardrobe_display, f"❌ Error deleting item: {e}")
     
-    def view_wardrobe():
-        wardrobe = fetch_wardrobe_items(WARDROBE_ID)
-        output_text.delete(1.0, tk.END)
-        output_text.insert(tk.END, f"👕 {username.capitalize()}'s Current Wardrobe Contents:\n\n")
-        for category, items in wardrobe.items():
-            output_text.insert(tk.END, f"{category.capitalize()} ({len(items)}):\n")
-            for item in items:
-                rgb = item['rgb']
-                name = _closest_color_name(rgb)
-                output_text.insert(tk.END, f"  [ID {item['id']}] - {name} ({rgb})\n")
-            output_text.insert(tk.END, "\n")
-        output_text.see(tk.END)
-    
-    tk.Button(frame, text="View Wardrobe", command=view_wardrobe).pack(pady=10)
-    
-    # Upload image + auto sample
-    def upload_image():
-        file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.png;*.jpg;*.jpeg")])
-        if file_path:
-            original_img = Image.open(file_path).convert('RGB')
-            display_img = original_img.copy()
-            display_img.thumbnail((300, 300))
+    def upload_item(self):
+        filepath = filedialog.askopenfilename()
+        if not filepath:
+            return
 
-            canvas.img = display_img
-            canvas.original_img = original_img
-            img_tk = ImageTk.PhotoImage(display_img)
+        img = Image.open(filepath)
 
-            canvas.image = img_tk
-            canvas.delete("all")
-            canvas.create_image(0, 0, anchor=tk.NW, image=img_tk)
-
-            # Automatically pick dominant color
-            rgb = get_dominant_color(original_img)
-            insert_clothing_item(WARDROBE_ID, current_category.get(), rgb)
-            name = _closest_color_name(rgb)
-            output_text.insert(tk.END, f"Auto-added {name} ({rgb}) to {current_category.get()}.\n")
-            output_text.see(tk.END)
-
-    tk.Button(frame, text="Upload Image", command=upload_image).pack(pady=10)
-
-    def generate_outfits():
-        # Fetch wardrobe from database
-        wardrobe_db = fetch_wardrobe_items(WARDROBE_ID)
-
-        # Flatten wardrobe to match expected format: {tops: [rgb, ...], ...}
-        wardrobe = {
-            category: [item['rgb'] for item in items]
-            for category, items in wardrobe_db.items()
-        }
-
-        # Clear the output box
-        output_text.delete(1.0, tk.END)
-
-        # Redirect stdout to show results in GUI
-        import sys
-        sys.stdout = StdoutRedirector(output_text)
-
-        try:
-            generate_and_print_outfits(wardrobe)
-        except Exception as e:
-            print(f"⚠️ Error generating outfits: {e}")
-        finally:
-            sys.stdout = sys.__stdout__
-
-
-    tk.Button(frame, text="Generate Outfits", command=generate_outfits).pack(pady=10)
-
-    def logout():
-        window.destroy()
-        show_login_screen()
-        
-    tk.Button(frame, text="Logout", command=logout).pack(pady=5)
-    
-    # Optional: manual click override
-    def on_click(event):
-        if hasattr(canvas, "img") and hasattr(canvas, "original_img"):
-            img = canvas.original_img
-            if 0 <= event.x < img.width and 0 <= event.y < img.height:
+        def on_click(event):
+            try:
                 rgb = img.getpixel((event.x, event.y))
-                insert_clothing_item(WARDROBE_ID, current_category.get(), rgb)
-                name = _closest_color_name(rgb)
-                output_text.insert(tk.END, f"Manually added {name} ({rgb}) to {current_category.get()}.\n")
-                output_text.see(tk.END)
+            except IndexError:
+                self.log(self.wardrobe_display, "⚠️ Click inside the image bounds.")
+                return
+            clothing_type = clothing_type_var.get()
+            insert_clothing_item(self.wardrobe_id, clothing_type, rgb)
+            self.log(self.wardrobe_display, f"Added {clothing_type}: {rgb} ({_closest_color_name(rgb)})")
+            top.destroy()
+            self.refresh_wardrobe_display()
 
-    canvas = tk.Canvas(window, width=300, height=300, bg='gray')
-    canvas.pack(side=tk.LEFT, padx=10)
-    canvas.bind("<Button-1>", on_click)
+        top = tk.Toplevel(self.root)
+        top.title("Select Color")
+        canvas = tk.Canvas(top, width=img.width, height=img.height)
+        canvas.pack()
+        tk_img = tk.PhotoImage(file=filepath)
+        canvas.create_image(0, 0, anchor=tk.NW, image=tk_img)
+        canvas.image = tk_img
+        canvas.bind("<Button-1>", on_click)
 
-    window.mainloop()
+        clothing_type_var = tk.StringVar(top)
+        clothing_type_var.set("tops")
+        tk.OptionMenu(top, clothing_type_var, "tops", "pants", "shoes", "jackets").pack(pady=5)
 
-# Redirect stdout to GUI
-import io
-class StdoutRedirector(io.StringIO):
-    def __init__(self, text_widget):
-        super().__init__()
-        self.text_widget = text_widget
+    def refresh_wardrobe_display(self):
+        self.wardrobe = fetch_wardrobe_items(self.wardrobe_id)
+        self.wardrobe_display.delete(1.0, tk.END)
+        for category, items in self.wardrobe.items():
+            self.wardrobe_display.insert(tk.END, f"{category}:")
+            for item in items:
+                color_name = _closest_color_name(item['rgb'])
+                self.wardrobe_display.insert(tk.END, f" - {item['rgb']} ({color_name})\n")
 
-    def write(self, s):
-        self.text_widget.insert(tk.END, s)
-        self.text_widget.see(tk.END)
+    def show_outfit_suggestions(self):
+        for widget in self.outfit_frame.winfo_children():
+            widget.destroy()
 
-    def flush(self):
-        pass
+        canvas = tk.Canvas(self.outfit_frame)
+        scrollbar = tk.Scrollbar(self.outfit_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas)
 
-if __name__ == '__main__':
-    show_login_screen()
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        suggestions = generate_outfit_suggestions({k: [i['rgb'] for i in v] for k, v in self.wardrobe.items()})
+        seen = set()
+
+        for top, pant, shoe, score, jacket in suggestions:
+            key = (top, pant, shoe, jacket)
+            if key in seen:
+                continue
+            seen.add(key)
+
+            frame = tk.Frame(scrollable_frame, bd=1, relief=tk.SOLID, padx=10, pady=10)
+            frame.pack(padx=5, pady=10, fill="x")
+
+            tk.Label(frame, text=f"Top: {_closest_color_name(top)} {top}", font=("Arial", 12)).pack(anchor="w")
+            tk.Label(frame, text=f"Pant: {_closest_color_name(pant)} {pant}", font=("Arial", 12)).pack(anchor="w")
+            tk.Label(frame, text=f"Shoe: {_closest_color_name(shoe)} {shoe}", font=("Arial", 12)).pack(anchor="w")
+            if jacket and all(v is not None for v in jacket):
+                tk.Label(frame, text=f"Jacket: {_closest_color_name(jacket)} {jacket}", font=("Arial", 12)).pack(anchor="w")
+            else:
+                jacket = None
+            tk.Label(frame, text=f"Score: {score}", font=("Arial", 12)).pack(anchor="w")
+
+            def save_callback(t=top, p=pant, s=shoe, j=jacket, sc=score):
+                top_id = get_item_id_by_color(self.wardrobe_id, "tops", t)
+                pant_id = get_item_id_by_color(self.wardrobe_id, "pants", p)
+                shoe_id = get_item_id_by_color(self.wardrobe_id, "shoes", s)
+                jacket_id = get_item_id_by_color(self.wardrobe_id, "jackets", j) if j else None
+                if save_outfit(self.wardrobe_id, top_id, pant_id, shoe_id, jacket_id, sc):
+                    self.log(self.wardrobe_display, "✅ Outfit saved!")
+                else:
+                    self.log(self.wardrobe_display, "⚠️ Outfit already exists.")
+
+            tk.Button(frame, text="Save Outfit", font=("Arial", 11), command=save_callback).pack(pady=5)
+
+    def view_saved_outfits(self):
+        for widget in self.outfit_frame.winfo_children():
+            widget.destroy()
+
+        canvas = tk.Canvas(self.outfit_frame)
+        scrollbar = tk.Scrollbar(self.outfit_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas)
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        saved_outfits = fetch_saved_outfits(self.wardrobe_id)
+
+        for outfit in saved_outfits:
+            top_rgb, pant_rgb, shoe_rgb, jacket_rgb, score = outfit
+
+            frame = tk.Frame(scrollable_frame, bd=1, relief=tk.SOLID, padx=10, pady=10)
+            frame.pack(padx=5, pady=10, fill="x")
+
+            tk.Label(frame, text=f"Top: {_closest_color_name(top_rgb)} {top_rgb}", font=("Arial", 12)).pack(anchor="w")
+            tk.Label(frame, text=f"Pant: {_closest_color_name(pant_rgb)} {pant_rgb}", font=("Arial", 12)).pack(anchor="w")
+            tk.Label(frame, text=f"Shoe: {_closest_color_name(shoe_rgb)} {shoe_rgb}", font=("Arial", 12)).pack(anchor="w")
+            if jacket_rgb and all(v is not None for v in jacket_rgb):
+                tk.Label(frame, text=f"Jacket: {_closest_color_name(jacket_rgb)} {jacket_rgb}", font=("Arial", 12)).pack(anchor="w")
+            tk.Label(frame, text=f"Score: {score}", font=("Arial", 12)).pack(anchor="w")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = WardrobeApp(root)
+    root.mainloop()
