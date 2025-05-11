@@ -70,7 +70,7 @@ def _score_outfit(*colors):
 # Closest color name using webcolors
 def _closest_color_name(rgb):
     try:
-        return webcolors.rgb_to_name(rgb)
+        return webcolors.rgb_to_name(rgb).title()
     except ValueError:
         min_distance = float('inf')
         closest_name = None
@@ -79,7 +79,7 @@ def _closest_color_name(rgb):
             dist = ___color_distance(rgb, (r, g, b))
             if dist < min_distance:
                 min_distance = dist
-                closest_name = name.capitalize()
+                closest_name = name.title()
         return closest_name
     
 # Generate combinations and print
