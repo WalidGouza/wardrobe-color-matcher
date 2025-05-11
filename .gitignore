@@ -11,7 +11,7 @@ __pycache__/
 # VSCode project settings
 .vscode/
 
-# Optional: SQL file if it's large/generated locally
+# SQL file if it's large/generated locally
 wardrobe.sql
 
 gui_test.py
