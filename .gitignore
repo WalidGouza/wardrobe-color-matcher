@@ -14,4 +14,4 @@ __pycache__/
 # Optional: SQL file if it's large/generated locally
 wardrobe.sql
 
-gui.py
+gui_test.py
