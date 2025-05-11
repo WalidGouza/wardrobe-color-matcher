@@ -79,7 +79,7 @@ def _closest_color_name(rgb):
             dist = ___color_distance(rgb, (r, g, b))
             if dist < min_distance:
                 min_distance = dist
-                closest_name = name
+                closest_name = name.capitalize()
         return closest_name
     
 # Generate combinations and print
