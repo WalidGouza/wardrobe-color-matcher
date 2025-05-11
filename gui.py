@@ -8,7 +8,7 @@ class WardrobeApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Outfit Matcher for Colorblind Users")
-        self.root.geometry("600x700")
+        self.root.geometry("1200x700")
         self.root.configure(padx=20, pady=20)
 
         self.username_entry = tk.Entry(root, font=("Arial", 14))
@@ -52,21 +52,33 @@ class WardrobeApp:
         for widget in self.root.winfo_children():
             widget.destroy()
 
-        tk.Label(self.root, text="Delete Item ID:").pack(pady=(10, 0))
-        self.delete_id_entry = tk.Entry(self.root, width=10)
-        self.delete_id_entry.pack()
-        tk.Button(self.root, text="Delete Item", font=("Arial", 12), command=self.delete_item).pack(pady=5, fill="x")
-        tk.Button(self.root, text="Upload Item", font=("Arial", 12), command=self.upload_item).pack(pady=10, fill="x")
-        tk.Button(self.root, text="Generate Outfits", font=("Arial", 12), command=self.show_outfit_suggestions).pack(pady=10, fill="x")
-        tk.Button(self.root, text="View Saved Outfits", font=("Arial", 12), command=self.view_saved_outfits).pack(pady=10, fill="x")
+        # Main horizontal container
+        main_frame = tk.Frame(self.root)
+        main_frame.pack(fill=tk.BOTH, expand=True)
 
-        self.wardrobe_display = tk.Text(self.root, height=10, width=50, font=("Courier", 11))
+        # Left panel (wardrobe + controls)
+        left_panel = tk.Frame(main_frame, padx=10, pady=10)
+        left_panel.pack(side=tk.LEFT, fill=tk.Y)
+
+        # Right panel (outfits)
+        self.outfit_frame = tk.Frame(main_frame, padx=10, pady=10)
+        self.outfit_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Controls in left panel
+        tk.Button(left_panel, text="Upload Item", command=self.upload_item).pack(pady=5, fill=tk.X)
+        tk.Button(left_panel, text="Generate Outfits", command=self.show_outfit_suggestions).pack(pady=5, fill=tk.X)
+        tk.Button(left_panel, text="View Saved Outfits", command=self.view_saved_outfits).pack(pady=5, fill=tk.X)
+
+        self.wardrobe_display = tk.Text(left_panel, height=15, width=40)
         self.wardrobe_display.pack(pady=10)
 
-        self.outfit_frame = tk.Frame(self.root)
-        self.outfit_frame.pack(fill=tk.BOTH, expand=True)
+        tk.Label(left_panel, text="Delete Item ID:").pack(pady=(10, 0))
+        self.delete_id_entry = tk.Entry(left_panel, width=10)
+        self.delete_id_entry.pack()
+        tk.Button(left_panel, text="Delete Item", command=self.delete_item).pack(pady=5)
 
         self.refresh_wardrobe_display()
+
 
     def log(self, widget, message):
         widget.insert(tk.END, message + "\n")
