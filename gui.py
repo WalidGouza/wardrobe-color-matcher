@@ -78,14 +78,19 @@ class WardrobeApp:
         self.right_panel = right_panel
         self.outfit_frame = right_panel
 
-        self.wardrobe_display = tk.Text(self.root)
-        self.wardrobe_display.pack_forget()  # Not used in layout now
+        from tkinter.scrolledtext import ScrolledText
+
+        self.wardrobe_display = ScrolledText(self.root, height=8, font=("Consolas", 11))
+        self.wardrobe_display.pack(side="bottom", fill="x", padx=10, pady=5)
+        self.wardrobe_display.config(state="disabled")
 
         self.refresh_wardrobe_display()
 
     def log(self, widget, message):
+        widget.config(state="normal")
         widget.insert(tk.END, message + "\n")
         widget.see(tk.END)
+        widget.config(state="disabled")
 
     def upload_item(self):
         filepath = filedialog.askopenfilename()
@@ -120,6 +125,7 @@ class WardrobeApp:
 
     def refresh_wardrobe_display(self):
         self.wardrobe = fetch_wardrobe_items(self.wardrobe_id)
+        self.display_wardrobe()
 
     def delete_item(self, item_id):
         try:
@@ -185,7 +191,7 @@ class WardrobeApp:
         seen = set()
         row = 0
         col = 0
-
+        
         for outfit in outfits:
             if saved:
                 top_rgb, pant_rgb, shoe_rgb, jacket_rgb, score = outfit
@@ -213,9 +219,10 @@ class WardrobeApp:
                     pant_id = get_item_id_by_color(self.wardrobe_id, "pants", p)
                     shoe_id = get_item_id_by_color(self.wardrobe_id, "shoes", s)
                     jacket_id = get_item_id_by_color(self.wardrobe_id, "jackets", j) if j else None
-                    save_outfit(self.wardrobe_id, top_id, pant_id, shoe_id, jacket_id, sc)
-                    self.log(self.wardrobe_display, "Outfit saved!")
-
+                    if save_outfit(self.wardrobe_id, top_id, pant_id, shoe_id, jacket_id, sc):
+                        self.log(self.wardrobe_display, "Outfit saved!")
+                    else: 
+                        self.log(self.wardrobe_display, "Outfit already saved!")
                 tk.Button(frame, text="Save Outfit", command=save_callback, font=("Arial", 11)).pack(pady=5)
 
             col += 1
