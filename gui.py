@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog
-from PIL import Image
+from PIL import ImageTk, Image
 from db import *
 from colors_test import generate_outfit_suggestions, _closest_color_name
 
@@ -114,7 +114,7 @@ class WardrobeApp:
         top = tk.Toplevel(self.root)
         canvas = tk.Canvas(top, width=img.width, height=img.height)
         canvas.pack()
-        tk_img = tk.PhotoImage(file=filepath)
+        tk_img = ImageTk.PhotoImage(file=filepath)
         canvas.create_image(0, 0, anchor=tk.NW, image=tk_img)
         canvas.image = tk_img
         canvas.bind("<Button-1>", on_click)

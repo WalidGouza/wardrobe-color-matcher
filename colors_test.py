@@ -74,8 +74,8 @@ def _closest_color_name(rgb):
     except ValueError:
         min_distance = float('inf')
         closest_name = None
-        for hex_val, name in webcolors.CSS3_HEX_TO_NAMES.items():
-            r, g, b = webcolors.hex_to_rgb(hex_val)
+        for name in webcolors.names(spec="css3"):
+            r, g, b = webcolors.name_to_rgb(name, spec="css3")
             dist = ___color_distance(rgb, (r, g, b))
             if dist < min_distance:
                 min_distance = dist
