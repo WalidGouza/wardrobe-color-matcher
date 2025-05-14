@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block content %}
+<form method="POST" class="card p-4 mx-auto" style="max-width: 400px;">
+  <h2 class="mb-4 text-center">Login or Sign Up</h2>
+  <div class="mb-3">
+    <label class="form-label">Username</label>
+    <input name="username" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Password</label>
+    <input name="password" type="password" class="form-control" required>
+  </div>
+  <div class="d-flex justify-content-between">
+    <button class="btn btn-primary" type="submit">Login</button>
+    <button name="signup" value="1" class="btn btn-outline-secondary" type="submit">Sign Up</button>
+  </div>
+</form>
+{% endblock %}

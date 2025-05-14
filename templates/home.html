@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="text-center mt-5">
+  <h1 class="display-4">👗 Welcome to Your Smart Wardrobe</h1>
+  <p class="lead mt-3">Match clothes effortlessly using color analysis and outfit generation powered by AI.</p>
+
+  {% if not session.username %}
+    <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg mt-4">Login or Sign Up</a>
+  {% else %}
+    <div class="mt-4">
+      <a href="{{ url_for('wardrobe') }}" class="btn btn-outline-primary btn-lg me-3">Go to Wardrobe</a>
+      <a href="{{ url_for('generate') }}" class="btn btn-outline-success btn-lg">Generate Outfits</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

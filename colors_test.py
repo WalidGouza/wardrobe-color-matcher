@@ -1,6 +1,7 @@
 import colorsys
 import webcolors
 from itertools import product, combinations
+from collections import Counter
 
 MIN_ACCEPTABLE_SCORE = 2.5
 
@@ -81,7 +82,13 @@ def _closest_color_name(rgb):
                 min_distance = dist
                 closest_name = name.title()
         return closest_name
-    
+
+def get_dominant_color(image, resize_to=(100, 100)):
+    small_img = image.resize(resize_to)
+    pixels = list(small_img.getdata())
+    color_counts = Counter(pixels)
+    return color_counts.most_common(1)[0][0]
+
 # Generate combinations and print
 def generate_outfit_suggestions(wardrobe):
     
@@ -98,7 +105,7 @@ def generate_outfit_suggestions(wardrobe):
         colors = [top, pant, shoe] + ([jacket] if jacket else [])
         score = _score_outfit(*colors)
         if score > MIN_ACCEPTABLE_SCORE:
-            outfits.append((top, pant, shoe, score, jacket))
+            outfits.append((top, pant, shoe, jacket, score))
 
     # Sort outfits by score
     outfits.sort(key=lambda x: x[3], reverse=True)

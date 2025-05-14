@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2 class="mb-4">{{ 'Saved Outfits' if saved else 'Generated Outfits' }}</h2>
+
+<!-- Flex container for horizontal layout -->
+<div class="d-flex flex-wrap gap-3">
+  {% for o in outfits %}
+    <form method="POST" action="{{ url_for('save_outfit_route') }}" class="card p-3 shadow-sm" style="width: 18rem;">
+        <pre class="mb-2">
+Top: {{ closest_color_name(o[0]) }} {{ o[0] }}
+Pants: {{ closest_color_name(o[1]) }} {{ o[1] }}
+Shoes: {{ closest_color_name(o[2]) }} {{ o[2] }}
+{% if o|length == 5 and o[3] %}Jacket: {{ closest_color_name(o[3]) }} {{ o[3] }}{% endif %}
+Score: {{ o[-1] }}
+        </pre>
+        <input type="hidden" name="top" value="{{ o[0] }}">
+        <input type="hidden" name="pants" value="{{ o[1] }}">
+        <input type="hidden" name="shoes" value="{{ o[2] }}">
+        <input type="hidden" name="jacket" value="{{ o[3] if o|length == 5 else '' }}">
+        <input type="hidden" name="score" value="{{ o[-1] }}">
+        {% if not saved %}
+          <button type="submit" class="btn btn-outline-success">Save Outfit</button>
+        {% endif %}
+    </form>
+  {% endfor %}
+</div>
+
+<a href="{{ url_for('wardrobe') }}" class="btn btn-link mt-3">⬅ Back to Wardrobe</a>
+{% endblock %}
