@@ -3,26 +3,62 @@ from werkzeug.utils import secure_filename
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from email_validator import validate_email, EmailNotValidError
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer
 from datetime import timedelta
 import os
 from db import *
 from colors_test import get_dominant_color, _closest_color_name, generate_outfit_suggestions
 from PIL import Image
 
+load_dotenv()
+
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config.update(
-    SECRET_KEY= app.secret_key,
-    SESSION_COOKIE_SECURE=True,       # HTTPS only
+    SESSION_COOKIE_SECURE=False,
+    SESSION_COOKIE_DOMAIN= '10.121.44.171',    # LAN Domain for cross device acces
     SESSION_COOKIE_HTTPONLY=True,    # Prevent JS access
     SESSION_COOKIE_SAMESITE='Lax',   # CSRF protection
     PERMANENT_SESSION_LIFETIME=timedelta(days=30),  # For remember me
     REMEMBER_COOKIE_SECURE=True,
     REMEMBER_COOKIE_HTTPONLY=True,
     REMEMBER_COOKIE_DURATION=timedelta(days=30),
-    REMEMBER_COOKIE_NAME='wardrobe_remember'
+    REMEMBER_COOKIE_NAME='wardrobe_remember',
 )
+
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get("MAIL_USERNAME")
+app.config['MAIL_PASSWORD'] = os.environ.get("MAIL_PASSWORD")
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get("MAIL_USERNAME")
+
+mail = Mail(app)
+s = URLSafeTimedSerializer(app.secret_key)
+
+def send_confirmation_email(email, username):
+    token = s.dumps(email, salt='email-confirm')
+    confirm_url = url_for('confirm_email', token=token, _external=True)
+
+    msg = Message(
+        subject="Confirm Your Account",
+        recipients=[email],
+        body=f"Hi {username}, confirm your account: {confirm_url}"
+    )
+    mail.send(msg)
+
+def send_welcome_email(username, email):
+    msg = Message(
+        subject=f"Hi {username}, Welcome to Smart Wardrobe",
+        recipients=[email],
+        body=f"""Hi {username}, \n🎉 Welcome to Smart Wardrobe!
+                Your account is now active. Start building your wardrobe and discover perfect outfits tailored by color and style.
+                Let's make getting dressed effortless!
+        """)
+    mail.send(msg)
 
 # Initialize security extensions
 csrf = CSRFProtect(app)
@@ -31,13 +67,6 @@ limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["200 per day", "50 per hour"]
 )
-
-@app.after_request
-def add_cors_headers(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-    return response
-
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 @app.route('/')
@@ -68,14 +97,38 @@ def signup():
         username = request.form['username'].strip()
         password = request.form['password']
         email = request.form.get('email','').strip().lower()
+        
+        try:
+            valid = validate_email(email)
+            email = valid.email
+            
+        except EmailNotValidError as e:
+            flash(str(e), "danger")
+            return redirect(url_for('signup'))
+        
         try:
             create_user(email=email, username=username, password=password)
-            flash("Account created. Please log in.", "info")
-            return redirect(url_for('login'))
+        
+            send_confirmation_email(email, username)
+            
+            flash("Account created. Please check your inbox and confirm your email", "info")
         except Exception as e:
             print(e)
             flash("Username or email already exists", "danger")
     return render_template('signup.html')
+
+@app.route('/confirm/<token>')
+def confirm_email(token):
+    try:
+        email = s.loads(token, salt='email-confirm', max_age=3600)
+        username = mark_user_as_confirmed(email)
+        flash("✅ Email confirmed successfully!", "success")
+        send_welcome_email(username, email)
+        return redirect(url_for('login'))
+    except Exception as e:
+        print(e)
+        flash("Invalid or expired confirmation link.", "danger")
+        return redirect(url_for('signup'))
 
 @app.route('/wardrobe', methods=['GET', 'POST'])
 def wardrobe():

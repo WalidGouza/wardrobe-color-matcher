@@ -30,10 +30,19 @@ def create_user(email, username, password):
             # Create wardrobe
             cur.execute("INSERT INTO wardrobe (user_id) VALUES (%s)", (user_id,))
 
+def mark_user_as_confirmed(email):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET confirmed = TRUE WHERE email = %s", (email,))
+            conn.commit()
+            cur.execute("SELECT username FROM users WHERE email = %s", (email,))
+            row = cur.fetchone()
+            return row[0] if row else None
+
 def validate_user(identifier, password):
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT username, password FROM users WHERE username = %s OR email = %s", (identifier, identifier))
+            cur.execute("SELECT username, password FROM users WHERE (username = %s OR email = %s) AND confirmed = TRUE", (identifier, identifier))
             row = cur.fetchone()
             if row:
                 username, hashed_pw = row
