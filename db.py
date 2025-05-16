@@ -19,24 +19,27 @@ DB_CONFIG = {
     'password': DB_PASSWORD
 }
 
-def create_user(username, password):
+def create_user(email, username, password):
     hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, hashed))
-            user_id = cur.fetchone()[0]
+            cur.execute("INSERT INTO users (email, username, password) VALUES (%s, %s, %s)", (email, username, hashed))
+            cur.execute("SELECT id FROM users WHERE username = %s AND email = %s", (username, email))
+            user_id = cur.fetchone()
 
             # Create wardrobe
             cur.execute("INSERT INTO wardrobe (user_id) VALUES (%s)", (user_id,))
 
-def validate_user(username, password):
+def validate_user(identifier, password):
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT password FROM users WHERE username = %s", (username,))
+            cur.execute("SELECT username, password FROM users WHERE username = %s OR email = %s", (identifier, identifier))
             row = cur.fetchone()
-            if row and bcrypt.checkpw(password.encode(), row[0].encode()):
-                return True
-    return False
+            if row:
+                username, hashed_pw = row
+                if bcrypt.checkpw(password.encode(), hashed_pw.encode()):
+                    return username
+    return None
 
 def get_wardrobe_id(username):
     with get_connection() as conn:

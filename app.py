@@ -18,25 +18,36 @@ def home():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username'].strip()
+        identifier = request.form['identifier'].strip()
         password = request.form['password']
-        if 'signup' in request.form:
-            try:
-                create_user(username, password)
-                flash("Account created. Please log in.", "info")
-            except:
-                flash("Username already exists", "danger")
-        elif validate_user(username, password):
+        username = validate_user(identifier, password)
+        if username:
             session['username'] = username
-            session['wardrobe_id'] = get_wardrobe_id(username)
+            session['wardrobe_id'] = get_wardrobe_id(identifier)
+            flash(f"Logged in as {username}.", "info")
             return redirect(url_for('wardrobe'))
         else:
             flash("Invalid credentials", "danger")
     return render_template('login.html')
 
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        username = request.form['username'].strip()
+        password = request.form['password']
+        email = request.form.get('email','').strip().lower()
+        try:
+            create_user(email=email, username=username, password=password)
+            flash("Account created. Please log in.", "info")
+            return redirect(url_for('login'))
+        except Exception as e:
+            print(e)
+            flash("Username or email already exists", "danger")
+    return render_template('signup.html')
+
 @app.route('/wardrobe', methods=['GET', 'POST'])
 def wardrobe():
-    if 'username' not in session:
+    if 'identifier' not in session:
         return redirect('/')
     items = fetch_wardrobe_items(session['wardrobe_id'])
     return render_template('wardrobe.html', items=items, username=session['username'], closest_color_name= _closest_color_name)

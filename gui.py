@@ -10,7 +10,7 @@ class WardrobeApp:
         self.root.title("Outfit Matcher for Colorblind Users")
         self.root.geometry("1200x700")
 
-        self.username_label = tk.Label(root, text='Username',font=("Arial", 12))
+        self.username_label = tk.Label(root, text='Email or Username',font=("Arial", 12))
         self.username_entry = tk.Entry(root, font=("Arial", 12))
         self.password_label = tk.Label(root, text='Password',font=("Arial", 12))
         self.password_entry = tk.Entry(root, show="*", font=("Arial", 12))

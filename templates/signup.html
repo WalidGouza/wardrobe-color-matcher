@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container col-xl-10 col-xxl-8 px-4 py-5" bis_skin_checked="1">
+  <div class="row align-items-center g-lg-5 py-5" bis_skin_checked="1">
+    <div class="col-lg-7 text-center text-lg-start" bis_skin_checked="1">
+      <h1 class="display-4 fw-bold lh-1 text-body-emphasis mb-3">
+        👗 Welcome to Your Smart Wardrobe
+      </h1>
+      <p class="col-lg-10 fs-4">
+        Match clothes effortlessly using color analysis and outfit generation powered by AI.
+      </p>
+    </div>
+    <div class="col-md-10 mx-auto col-lg-5" bis_skin_checked="1">
+    <form method="POST" class="p-4 p-md-5 border rounded-3 bg-body-tertiary" style="max-width: 400px;">
+        <div class="form-floating mb-3" bis_skin_checked="1">
+          <input
+            name="email"
+            type="email"
+            class="form-control"
+            id="floatingInput"
+            placeholder="name@example.com"
+          />
+          <label for="floatingInput">Email address</label>
+        </div>
+        <div class="form-floating mb-3" bis_skin_checked="1">
+          <input
+            name="username"
+            class="form-control"
+            id="floatingPassword"
+            placeholder="Password"
+          />
+          <label for="floatingPassword">Username</label>
+        </div>
+        <div class="form-floating mb-3" bis_skin_checked="1">
+          <input
+            name="password"
+            type="password"
+            class="form-control"
+            id="floatingPassword"
+            placeholder="Password"
+          />
+          <label for="floatingPassword">Password</label>
+        </div>
+        <div class="checkbox mb-3" bis_skin_checked="1">
+          <label>
+            <input type="checkbox" value="remember-me" /> Remember me
+          </label>
+        </div>
+        <hr class="my-4" />
+        <div class="d-flex justify-content-between">
+            <button class="btn btn-primary" type="submit">Sign Up</button>
+            <a href="{{ url_for('login') }}" class="btn btn-outline-secondary" type="submit">Login</a>
+        </div>
+    </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
