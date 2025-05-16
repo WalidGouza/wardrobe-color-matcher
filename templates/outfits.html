@@ -6,7 +6,8 @@
 <div class="d-flex flex-wrap gap-3">
   {% for o in outfits %}
     <form method="POST" action="{{ url_for('save_outfit_route') }}" class="card p-3 shadow-sm" style="width: 18rem;">
-        <pre class="mb-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">  
+      <pre class="mb-2">
 Top: {{ closest_color_name(o[0]) }} {{ o[0] }}
 Pants: {{ closest_color_name(o[1]) }} {{ o[1] }}
 Shoes: {{ closest_color_name(o[2]) }} {{ o[2] }}

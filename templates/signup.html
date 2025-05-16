@@ -11,7 +11,9 @@
       </p>
     </div>
     <div class="col-md-10 mx-auto col-lg-5" bis_skin_checked="1">
-    <form method="POST" class="p-4 p-md-5 border rounded-3 bg-body-tertiary" style="max-width: 400px;">
+      <form method="POST" class="px-4 py-3 border rounded-3 bg-body-tertiary" style="max-width: 400px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <h2 class="h3 mb-3 fw-normal text-center">Sign up</h2>  
         <div class="form-floating mb-3" bis_skin_checked="1">
           <input
             name="email"
@@ -19,6 +21,7 @@
             class="form-control"
             id="floatingInput"
             placeholder="name@example.com"
+            required
           />
           <label for="floatingInput">Email address</label>
         </div>
@@ -27,7 +30,8 @@
             name="username"
             class="form-control"
             id="floatingPassword"
-            placeholder="Password"
+            placeholder="Username"
+            required
           />
           <label for="floatingPassword">Username</label>
         </div>
@@ -38,6 +42,7 @@
             class="form-control"
             id="floatingPassword"
             placeholder="Password"
+            required
           />
           <label for="floatingPassword">Password</label>
         </div>
@@ -51,7 +56,7 @@
             <button class="btn btn-primary" type="submit">Sign Up</button>
             <a href="{{ url_for('login') }}" class="btn btn-outline-secondary" type="submit">Login</a>
         </div>
-    </form>
+      </form>
     </div>
   </div>
 </div>

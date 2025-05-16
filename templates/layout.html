@@ -2,22 +2,57 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Wardrobe App</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
 </head>
 <body data-bs-theme="dark">
+  <style>
+    @media (min-width: 768px) {
+      #main-content {
+        {% if session.username %}
+          margin-left: 280px !important;
+          max-width: calc(100% - 280px);
+        {% else %}
+          margin-left: 0 !important;
+          max-width: 100%;
+        {% endif %}
+      }
+    }
+
+    @media (max-width: 767.98px) {
+      #main-content {
+        margin-left: 0 !important;
+        max-width: 100%;
+      }
+    }
+  </style>
+  
+  {% if session.username %}
+  <!-- Toggle button for small screens -->
+  <nav class="navbar navbar-dark bg-dark d-md-none">
+    <div class="container-fluid">
+      <button class="btn btn-outline-light" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
+        ☰ Menu
+      </button>
+    </div>
+  </nav>
+  {% endif %}
+
   <div class="d-flex">
     {% if session.username %}
-    <!-- Sidebar -->
-    <div class="d-flex flex-column flex-shrink-0 p-3 text-bg-dark" style="width: 280px;">
+    <!-- Sidebar offcanvas -->
+    <div class="offcanvas offcanvas-start d-md-flex flex-column flex-shrink-0 p-3 text-bg-dark show" tabindex="-1" id="sidebar" aria-labelledby="sidebarLabel" style="width: 280px;" data-bs-backdrop="false" data-bs-scroll="true">
+      <div class="offcanvas-header d-md-none">
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
       <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
         <svg class="bi pe-none me-2" width="40" height="32" aria-hidden="true">
           <use xlink:href="#bootstrap"></use>
         </svg>
         <span class="fs-4">Outfit Generator</span>
       </a>
-      <hr>
+      <hr />
       <ul class="nav nav-pills flex-column mb-auto">
         <li class="nav-item">
           <a href="{{ url_for('wardrobe') }}" class="nav-link text-white">Wardrobe</a>
@@ -32,23 +67,24 @@
           <a href="{{ url_for('logout') }}" class="nav-link text-white">Logout</a>
         </li>
       </ul>
-      <hr>
+      <hr />
       <div class="dropdown">
         <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-          <img src="https://github.com/mdo.png" alt="" width="32" height="32" class="rounded-circle me-2">
-          <strong>{{ session.username if session.username else 'Guest' }}</strong>
+          <img src="https://github.com/mdo.png" alt="" width="32" height="32" class="rounded-circle me-2" />
+          <strong>{{ session.username }}</strong>
         </a>
         <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
           <li><a class="dropdown-item" href="#">Settings</a></li>
           <li><a class="dropdown-item" href="#">Profile</a></li>
-          <li><hr class="dropdown-divider"></li>
+          <li><hr class="dropdown-divider" /></li>
           <li><a class="dropdown-item" href="{{ url_for('logout') }}">Sign out</a></li>
         </ul>
       </div>
     </div>
     {% endif %}
+
     <!-- Main content area -->
-    <div class="container-fluid py-4 px-5">
+    <div class="container-fluid py-4 px-5" style="margin-left:280px;" id="main-content">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% for category, message in messages %}
           <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">

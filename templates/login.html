@@ -1,19 +1,57 @@
 {% extends "layout.html" %}
 {% block content %}
-<form method="POST" class="card p-4 mx-auto" style="max-width: 400px;">
-  <h2 class="mb-4 text-center">Login</h2>
-  <div class="mb-3">
-    <label class="form-label">Username or Email</label>
-    <input name="identifier" class="form-control" required>
+<div class="container col-xl-10 col-xxl-8 px-4 py-5" bis_skin_checked="1">
+  <div class="row align-items-center g-lg-5 py-5" bis_skin_checked="1">
+    <div class="col-lg-7 text-center text-lg-start" bis_skin_checked="1">
+      <h1 class="display-4 fw-bold lh-1 text-body-emphasis mb-3">
+        👗 Welcome to Your Smart Wardrobe
+      </h1>
+      <p class="col-lg-10 fs-4">
+        Match clothes effortlessly using color analysis and outfit generation powered by AI.
+      </p>
+    </div>
+    <div class="col-md-10 mx-auto col-lg-5" bis_skin_checked="1">
+      <form method="POST" class="px-4 py-3 border rounded-3 bg-body-tertiary" style="max-width: 400px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <h2 class="h3 mb-3 fw-normal text-center">Login</h2>
+        <div class="form-floating mb-3" bis_skin_checked="1">
+          <input
+            name="identifier"
+            class="form-control"
+            id="floatingPassword"
+            placeholder="Email or Username"
+            required
+          />
+          <label for="floatingPassword">Email or Username</label>
+        </div>
+        <div class="form-floating mb-3" bis_skin_checked="1">
+          <input
+            name="password"
+            type="password"
+            class="form-control"
+            id="floatingPassword"
+            placeholder="Password"
+            required
+          />
+          <label for="floatingPassword">Password</label>
+        </div>
+        <div class="checkbox mb-3" bis_skin_checked="1">
+          <input class="form-check-input" 
+                type="checkbox" 
+                name="remember_me" 
+                id="rememberMe"
+                {% if form and form.remember_me.data %}checked{% endif %}>
+          <label class="form-check-label" for="rememberMe">
+            Remember me
+          </label>
+        </div>
+        <hr class="my-4" />
+        <div class="d-flex justify-content-between">
+            <button class="btn btn-primary" type="submit">Login</button>
+            <a href="{{ url_for('signup') }}" class="btn btn-outline-secondary" type="submit">SignUp</a>
+        </div>
+      </form>
+    </div>
   </div>
-  <div class="mb-3">
-    <label class="form-label">Password</label>
-    <input name="password" type="password" class="form-control" required>
-  </div>
-
-  <div class="d-flex justify-content-between">
-    <button class="btn btn-primary" type="submit">Login</button>
-    <a href="{{ url_for('signup') }}" class="btn btn-outline-secondary">Sign Up</a>
-  </div>
-</form>
+</div>
 {% endblock %}

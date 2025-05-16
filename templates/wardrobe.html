@@ -2,6 +2,7 @@
 {% block content %}
 <h2 class="mb-4">Upload Clothing Item</h2>
 <form method="POST" action="{{ url_for('upload') }}" enctype="multipart/form-data" class="row g-3 mb-5">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="col-md-6">
     <label class="form-label">Choose Image</label>
     <input type="file" name="image" class="form-control" required>
@@ -29,6 +30,7 @@
         <li class="list-group-item d-flex justify-content-between align-items-center">
           {{ closest_color_name(item.rgb) }} {{ item.rgb }}
           <form method="POST" action="{{ url_for('delete', item_id=item.id) }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-danger px-3">Delete</button>
           </form>
         </li>
@@ -37,8 +39,8 @@
   </div>
 {% endfor %}
 
-<div class="mt-4">
-  <a href="{{ url_for('generate') }}" class="btn btn-primary me-2">Generate Outfits</a>
-  <a href="{{ url_for('saved') }}" class="btn btn-outline-secondary">View Saved Outfits</a>
+<div class="d-flex flex-column flex-sm-row justify-content-center mt-4 gap-3" style="max-width: 400px; margin: 0 auto;">
+  <a href="{{ url_for('generate') }}" class="btn btn-primary me-2 w-100">Generate Outfits</a>
+  <a href="{{ url_for('saved') }}" class="btn btn-outline-secondary w-100">View Saved Outfits</a>
 </div>
 {% endblock %}
