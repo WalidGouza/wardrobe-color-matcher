@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow-sm mx-auto" style="max-width: 500px;">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0">👤 Account Information</h4>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('edit_profile') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- Username -->
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+          <label class="form-label mb-0"><strong>Username:</strong></label>
+          <span id="username-display">{{ session.user.username }}</span>
+          <input type="text" class="form-control d-none" id="username-input" name="username" value="{{ session.user.username }}">
+          <button type="button" class="btn btn-sm btn-link" onclick="toggleEdit('username')">✏️</button>
+        </div>
+
+        <!-- Email -->
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+          <label class="form-label mb-0"><strong>Email:</strong></label>
+          <span id="email-display">{{ session.user.email }}</span>
+          <button type="button" class="btn btn-sm btn-link"></button>
+        </div>
+
+        <!-- Password -->
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+          <label class="form-label mb-0"><strong>Password:</strong></label>
+          <span id="password-display">••••••••</span>
+          <input type="password" class="form-control d-none" id="password-input" name="password" placeholder="New password">
+          <button type="button" class="btn btn-sm btn-link" onclick="toggleEdit('password')">✏️</button>
+        </div>
+
+
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+          <label class="form-label mb-0"><strong>Delete Account:</strong></label>
+          <span id="delete-display">(Your account cannot be recovered)</span>
+          <a type="button" class="btn btn-sm btn-link" href="{{ url_for('delete_account') }}">❌</a>
+        </div>
+
+        <div class="d-flex justify-content-between mt-4">
+          <button type="submit" class="btn btn-success">💾 Save Changes</button>
+          <a href="{{ url_for('home') }}" class="btn btn-outline-secondary">← Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function toggleEdit(field) {
+    const display = document.getElementById(`${field}-display`);
+    const input = document.getElementById(`${field}-input`);
+    display.classList.toggle('d-none');
+    input.classList.toggle('d-none');
+    input.focus();
+  }
+</script>
+{% endblock %}

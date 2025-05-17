@@ -42,13 +42,40 @@ def mark_user_as_confirmed(email):
 def validate_user(identifier, password):
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT username, password FROM users WHERE (username = %s OR email = %s) AND confirmed = TRUE", (identifier, identifier))
+            cur.execute("SELECT * FROM users WHERE (username = %s OR email = %s) AND confirmed = TRUE", (identifier, identifier))
             row = cur.fetchone()
+            print(row)
             if row:
-                username, hashed_pw = row
+                id, username, hashed_pw, email, confirmed = row
                 if bcrypt.checkpw(password.encode(), hashed_pw.encode()):
-                    return username
+                    return row
     return None
+
+def update_user_account(user_id, username=None, password=None):
+    with get_connection() as conn:  
+        with conn.cursor() as cur:
+            if username and password:
+                hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+                cur.execute("""
+                    UPDATE users SET username = %s, password = %s WHERE id = %s
+                """, (username, hashed, user_id))
+
+            elif username:
+                cur.execute("""
+                    UPDATE users SET username = %s WHERE id = %s
+                """, (username, user_id))
+
+            elif password:
+                hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+                cur.execute("""
+                    UPDATE users SET password = %s WHERE id = %s
+                """, (hashed, user_id))
+    
+
+def delete_user_account(username):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM users WHERE username=%s", (username,))
 
 def get_wardrobe_id(username):
     with get_connection() as conn:

@@ -10,7 +10,7 @@
   <style>
     @media (min-width: 768px) {
       #main-content {
-        {% if session.username %}
+        {% if session['user'] %}
           margin-left: 280px !important;
           max-width: calc(100% - 280px);
         {% else %}
@@ -28,7 +28,7 @@
     }
   </style>
   
-  {% if session.username %}
+  {% if session['user'] %}
   <!-- Toggle button for small screens -->
   <nav class="navbar navbar-dark bg-dark d-md-none">
     <div class="container-fluid">
@@ -40,7 +40,7 @@
   {% endif %}
 
   <div class="d-flex">
-    {% if session.username %}
+    {% if session['user'] %}
     <!-- Sidebar offcanvas -->
     <div class="offcanvas offcanvas-start d-md-flex flex-column flex-shrink-0 p-3 text-bg-dark show" tabindex="-1" id="sidebar" aria-labelledby="sidebarLabel" style="width: 280px;" data-bs-backdrop="false" data-bs-scroll="true">
       <div class="offcanvas-header d-md-none">
@@ -71,11 +71,11 @@
       <div class="dropdown">
         <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
           <img src="https://github.com/mdo.png" alt="" width="32" height="32" class="rounded-circle me-2" />
-          <strong>{{ session.username }}</strong>
+          <strong>{{ session['user']['username'] }}</strong>
         </a>
         <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
           <li><a class="dropdown-item" href="#">Settings</a></li>
-          <li><a class="dropdown-item" href="#">Profile</a></li>
+          <li><a class="dropdown-item" href="{{url_for('account')}}">Profile</a></li>
           <li><hr class="dropdown-divider" /></li>
           <li><a class="dropdown-item" href="{{ url_for('logout') }}">Sign out</a></li>
         </ul>

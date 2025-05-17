@@ -4,7 +4,7 @@
   <h1 class="display-4 fw-bold lh-1 text-body-emphasis mb-3">👗 Welcome to Your Smart Wardrobe</h1>
   <p class="fs-4">Match clothes effortlessly using color analysis and outfit generation powered by AI.</p>
 
-  {% if not session.username %}
+  {% if not session['user'] %}
     <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg mt-4">Login or Sign Up</a>
   {% else %}
     <div class="d-flex flex-column flex-sm-row justify-content-center mt-4 gap-3" style="max-width: 400px; margin: 0 auto;">

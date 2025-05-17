@@ -19,7 +19,7 @@ app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config.update(
     SESSION_COOKIE_SECURE=False,
-    SESSION_COOKIE_DOMAIN= '10.121.44.171',    # LAN Domain for cross device acces
+    SESSION_COOKIE_DOMAIN= '192.168.1.35',    # LAN Domain for cross device acces
     SESSION_COOKIE_HTTPONLY=True,    # Prevent JS access
     SESSION_COOKIE_SAMESITE='Lax',   # CSRF protection
     PERMANENT_SESSION_LIFETIME=timedelta(days=30),  # For remember me
@@ -38,6 +38,30 @@ app.config['MAIL_DEFAULT_SENDER'] = os.environ.get("MAIL_USERNAME")
 
 mail = Mail(app)
 s = URLSafeTimedSerializer(app.secret_key)
+
+class User():
+    def __init__(self, id, username, email, wardrobe_id):
+        self.id = id
+        self.username = username
+        self.email = email
+        self.wardrobe_id = wardrobe_id
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+            'wardrobe_id': self.wardrobe_id
+        }
+
+    @staticmethod
+    def from_dict(data):
+        return User(
+            id=data['id'],
+            username=data['username'],
+            email=data['email'],
+            wardrobe_id=data['wardrobe_id']
+        )
 
 def send_confirmation_email(email, username):
     token = s.dumps(email, salt='email-confirm')
@@ -79,13 +103,20 @@ def login():
     if request.method == 'POST':
         identifier = request.form['identifier'].strip()
         password = request.form['password']
-        username = validate_user(identifier, password)
-        remember_me = request.form.get('remember_me') == 'on'
-        if username:
-            session['username'] = username
-            session['wardrobe_id'] = get_wardrobe_id(identifier)
-            session.permanent = remember_me
-            flash(f"Logged in as {username}.", "info")
+        info = validate_user(identifier, password)
+        
+        if info:
+            wardrobe_id = get_wardrobe_id(info[1])
+
+            user = User(
+                id=info[0],
+                username=info[1],
+                email=info[3],
+                wardrobe_id=wardrobe_id
+            )
+
+            session['user'] = user.to_dict()
+            flash(f"Logged in as {user.username}.", "info")
             return redirect(url_for('home'))
         else:
             flash("Invalid credentials", "danger")
@@ -112,10 +143,13 @@ def signup():
             send_confirmation_email(email, username)
             
             flash("Account created. Please check your inbox and confirm your email", "info")
-        except Exception as e:
-            print(e)
+        except Exception:
             flash("Username or email already exists", "danger")
     return render_template('signup.html')
+
+@app.route('/account')
+def account():
+    return render_template('account.html', session=session)
 
 @app.route('/confirm/<token>')
 def confirm_email(token):
@@ -125,27 +159,70 @@ def confirm_email(token):
         flash("✅ Email confirmed successfully!", "success")
         send_welcome_email(username, email)
         return redirect(url_for('login'))
-    except Exception as e:
-        print(e)
+    except Exception:
         flash("Invalid or expired confirmation link.", "danger")
         return redirect(url_for('signup'))
 
-@app.route('/wardrobe', methods=['GET', 'POST'])
+@app.route('/edit-profile', methods=['POST'])
+def edit_profile():
+    new_username = request.form.get('username', '').strip()
+    new_password = request.form.get('password', '').strip()
+    current_user = session['user']
+    # Check if username is changing
+    username_changed = new_username and new_username != current_user['username']
+    password_changed = bool(new_password)
+
+    if not username_changed and not password_changed:
+        flash("No changes made.", "info")
+        return redirect(url_for('account'))
+
+    try:
+        update_user_account(
+            user_id=current_user['id'],
+            username=new_username if username_changed else None,
+            password=new_password if password_changed else None
+        )
+        if username_changed:
+            current_user['username'] = new_username
+        flash("✅ Profile updated successfully.", "success")
+    except Exception:
+        flash("❌ Failed to update profile. Username may already be taken.", "danger")
+
+    return redirect(url_for('account'))
+
+@app.route('/delete-account', methods=['POST'])
+def delete_account():
+    if 'user' not in session:
+        flash("You're not logged in.", "warning")
+        return redirect(url_for('login'))
+
+    username = session['user']['username']
+    delete_user_account(username)
+    session.clear()
+    flash("Your account has been permanently deleted.", "info")
+    return redirect(url_for('signup'))
+
+
+@app.route('/wardrobe')
 def wardrobe():
-    if 'username' not in session:
-        return redirect('/')
-    items = fetch_wardrobe_items(session['wardrobe_id'])
-    return render_template('wardrobe.html', items=items, username=session['username'], closest_color_name= _closest_color_name)
+    if 'user' not in session:
+        flash("Please log in.", "warning")
+        return redirect(url_for('login'))
+    user = User.from_dict(session['user'])
+    items = fetch_wardrobe_items(user.wardrobe_id)
+    return render_template('wardrobe.html', items=items, username=user.username, closest_color_name=_closest_color_name)
+
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    if 'username' not in session:
+    if 'user' not in session:
         return redirect('/')
     
     if 'image' not in request.files or 'category' not in request.form:
         flash("Image and category are required", "danger")
         return redirect(url_for('wardrobe'))
-
+    user = User.from_dict(session['user'])
+    
     file = request.files['image']
     category = request.form['category']
     filename = secure_filename(file.filename)
@@ -154,7 +231,7 @@ def upload():
 
     image = Image.open(path).convert('RGB')
     rgb = get_dominant_color(image)
-    insert_clothing_item(session['wardrobe_id'], category, rgb)
+    insert_clothing_item(user.wardrobe_id, category, rgb)
     name = _closest_color_name(rgb)
     flash(f"Added {name} {rgb} to {category}", "success")
     return redirect(url_for('wardrobe'))
@@ -166,9 +243,9 @@ def delete(item_id):
 
 @app.route('/generate')
 def generate():
-    if 'username' not in session:
+    if 'user' not in session:
         return redirect('/')
-    wardrobe = fetch_wardrobe_items(session['wardrobe_id'])
+    wardrobe = fetch_wardrobe_items(session['user']['wardrobe_id'])
     outfits = generate_outfit_suggestions({k: [i['rgb'] for i in v] for k, v in wardrobe.items()})
     return render_template('outfits.html', outfits=outfits, closest_color_name= _closest_color_name)
 
@@ -184,20 +261,20 @@ def save_outfit_route():
         flash("Invalid outfit data", "danger")
         return redirect(url_for('generate'))
 
-    top_id = get_item_id_by_color(session['wardrobe_id'], 'tops', t)
-    pants_id = get_item_id_by_color(session['wardrobe_id'], 'pants', p)
-    shoes_id = get_item_id_by_color(session['wardrobe_id'], 'shoes', s)
-    jacket_id = get_item_id_by_color(session['wardrobe_id'], 'jackets', j) if j else None
+    top_id = get_item_id_by_color(session['user']['wardrobe_id'], 'tops', t)
+    pants_id = get_item_id_by_color(session['user']['wardrobe_id'], 'pants', p)
+    shoes_id = get_item_id_by_color(session['user']['wardrobe_id'], 'shoes', s)
+    jacket_id = get_item_id_by_color(session['user']['wardrobe_id'], 'jackets', j) if j else None
 
-    save_outfit(session['wardrobe_id'], top_id, pants_id, shoes_id, jacket_id, score)
+    save_outfit(session['user']['wardrobe_id'], top_id, pants_id, shoes_id, jacket_id, score)
     flash("Outfit saved!", "success")
     return redirect(url_for('generate'))
 
 @app.route('/saved')
 def saved():
-    if 'username' not in session:
+    if 'user' not in session:
         return redirect('/')
-    outfits = fetch_saved_outfits(session['wardrobe_id'])
+    outfits = fetch_saved_outfits(session['user']['wardrobe_id'])
     return render_template('outfits.html', outfits=outfits, saved=True, closest_color_name= _closest_color_name)
 
 @app.route('/logout')
