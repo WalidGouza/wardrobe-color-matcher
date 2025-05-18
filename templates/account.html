@@ -6,7 +6,7 @@
       <h4 class="mb-0">👤 Account Information</h4>
     </div>
     <div class="card-body">
-      <form method="POST" action="{{ url_for('edit_profile') }}">
+      <form method="POST" action="{{ url_for('edit_profile') }}" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <!-- Username -->
@@ -32,11 +32,20 @@
           <button type="button" class="btn btn-sm btn-link" onclick="toggleEdit('password')">✏️</button>
         </div>
 
-
+        <!-- Delete account -->
         <div class="mb-3 d-flex justify-content-between align-items-center">
           <label class="form-label mb-0"><strong>Delete Account:</strong></label>
           <span id="delete-display">(Your account cannot be recovered)</span>
           <a type="button" class="btn btn-sm btn-link" href="{{ url_for('delete_account') }}">❌</a>
+        </div>
+
+        <!-- Profile Picture Upload -->
+        <div class="mb-3">
+          <label class="form-label"><strong>Profile Picture:</strong></label>
+          <div class="d-flex align-items-center">
+            <img src="{{ url_for('static', filename='uploads/' ~ session.user.profile_pic) }}" alt="Profile Picture" class="rounded-circle me-3" style="width: 64px; height: 64px; object-fit: cover;">
+            <input type="file" class="form-control" name="profile_pic" accept="image/*">
+          </div>
         </div>
 
         <div class="d-flex justify-content-between mt-4">

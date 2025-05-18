@@ -44,33 +44,36 @@ def validate_user(identifier, password):
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM users WHERE (username = %s OR email = %s) AND confirmed = TRUE", (identifier, identifier))
             row = cur.fetchone()
-            print(row)
             if row:
-                id, username, hashed_pw, email, confirmed = row
+                id, username, hashed_pw, email, confirmed, profile_pic = row
                 if bcrypt.checkpw(password.encode(), hashed_pw.encode()):
                     return row
     return None
 
-def update_user_account(user_id, username=None, password=None):
+def update_user_account(user_id, username=None, password=None, profile_pic=None):
     with get_connection() as conn:  
         with conn.cursor() as cur:
             if username and password:
                 hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
                 cur.execute("""
-                    UPDATE users SET username = %s, password = %s WHERE id = %s
-                """, (username, hashed, user_id))
+                    UPDATE users SET username = %s, password = %s, profile_pic = %s WHERE id = %s
+                """, (username, hashed, profile_pic, user_id))
 
             elif username:
                 cur.execute("""
-                    UPDATE users SET username = %s WHERE id = %s
-                """, (username, user_id))
+                    UPDATE users SET username = %s, profile_pic = %s WHERE id = %s
+                """, (username, profile_pic, user_id))
 
             elif password:
                 hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
                 cur.execute("""
-                    UPDATE users SET password = %s WHERE id = %s
-                """, (hashed, user_id))
-    
+                    UPDATE users SET password = %s, profile_pic = %s WHERE id = %s
+                """, (hashed, profile_pic, user_id))
+
+            elif profile_pic:
+                cur.execute("""
+                    UPDATE users SET profile_pic = %s WHERE id = %s
+                """, (profile_pic, user_id))
 
 def delete_user_account(username):
     with get_connection() as conn:

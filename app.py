@@ -36,22 +36,32 @@ app.config['MAIL_USERNAME'] = os.environ.get("MAIL_USERNAME")
 app.config['MAIL_PASSWORD'] = os.environ.get("MAIL_PASSWORD")
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get("MAIL_USERNAME")
 
+UPLOAD_FOLDER = os.path.join('static', 'uploads')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 mail = Mail(app)
 s = URLSafeTimedSerializer(app.secret_key)
 
 class User():
-    def __init__(self, id, username, email, wardrobe_id):
+    def __init__(self, id, username, email, wardrobe_id, profile_pic):
         self.id = id
         self.username = username
         self.email = email
         self.wardrobe_id = wardrobe_id
+        self.profile_pic = profile_pic or "profile_pic_default.png"
     
     def to_dict(self):
         return {
             'id': self.id,
             'username': self.username,
             'email': self.email,
-            'wardrobe_id': self.wardrobe_id
+            'wardrobe_id': self.wardrobe_id,
+            'profile_pic': self.profile_pic
         }
 
     @staticmethod
@@ -60,7 +70,8 @@ class User():
             id=data['id'],
             username=data['username'],
             email=data['email'],
-            wardrobe_id=data['wardrobe_id']
+            wardrobe_id=data['wardrobe_id'],
+            profile_pic=data.get('profile_pic', 'profile_pic_default.png')
         )
 
 def send_confirmation_email(email, username):
@@ -112,7 +123,8 @@ def login():
                 id=info[0],
                 username=info[1],
                 email=info[3],
-                wardrobe_id=wardrobe_id
+                wardrobe_id=wardrobe_id,
+                profile_pic=info[5]
             )
 
             session['user'] = user.to_dict()
@@ -165,28 +177,39 @@ def confirm_email(token):
 
 @app.route('/edit-profile', methods=['POST'])
 def edit_profile():
+    if 'user' not in session:
+        flash("Please log in.", "warning")
+        return redirect(url_for('login'))
+
+    user = User.from_dict(session['user'])
     new_username = request.form.get('username', '').strip()
     new_password = request.form.get('password', '').strip()
-    current_user = session['user']
-    # Check if username is changing
-    username_changed = new_username and new_username != current_user['username']
-    password_changed = bool(new_password)
+    file = request.files.get('profile_pic')
 
-    if not username_changed and not password_changed:
-        flash("No changes made.", "info")
-        return redirect(url_for('account'))
+    profile_pic_filename = user.profile_pic  # default to current
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(f"user_{user.id}.{file.filename.rsplit('.', 1)[1].lower()}")
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        profile_pic_filename = filename
 
     try:
         update_user_account(
-            user_id=current_user['id'],
-            username=new_username if username_changed else None,
-            password=new_password if password_changed else None
+            user_id=user.id,
+            username=new_username if new_username != user.username else None,
+            password=new_password if new_password else None,
+            profile_pic=profile_pic_filename
         )
-        if username_changed:
-            current_user['username'] = new_username
+
+        # refresh session
+        user.username = new_username
+        user.profile_pic = profile_pic_filename
+        session['user'] = user.to_dict()
+
         flash("✅ Profile updated successfully.", "success")
-    except Exception:
-        flash("❌ Failed to update profile. Username may already be taken.", "danger")
+    except Exception as e:
+        print("Update error:", e)
+        flash("❌ Failed to update profile.", "danger")
 
     return redirect(url_for('account'))
 
