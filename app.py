@@ -18,8 +18,8 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config.update(
-    SESSION_COOKIE_SECURE=False,
-    SESSION_COOKIE_DOMAIN= '192.168.1.35',    # LAN Domain for cross device acces
+    SESSION_COOKIE_SECURE=True,
+    # SESSION_COOKIE_DOMAIN= '192.168.1.35',    # LAN Domain for cross device acces
     SESSION_COOKIE_HTTPONLY=True,    # Prevent JS access
     SESSION_COOKIE_SAMESITE='Lax',   # CSRF protection
     PERMANENT_SESSION_LIFETIME=timedelta(days=30),  # For remember me
