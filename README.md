@@ -1,6 +1,6 @@
 # 👕 Wardrobe Color Matcher
 
-This is a Python GUI app that helps colorblind users build well-matched outfits using color theory.
+This is a Python GUI / Web app that helps colorblind users build well-matched outfits using color theory.
 
 Users can upload images of clothing items, extract dominant colors, and receive outfit suggestions based on complementary, analogous, and neutral color relationships.
 
@@ -21,10 +21,12 @@ Users can upload images of clothing items, extract dominant colors, and receive 
 ## 🧱 Tech Stack
 
 - Python 3
+- HTML 5 + CSS 3
 - Tkinter (GUI)
 - Pillow (image handling)
 - psycopg2 (PostgreSQL)
 - webcolors (color naming)
+- Flask + Bootstrap (web app)
 - PostgreSQL (data storage)
 - VSCode + Git + GitHub
 
@@ -56,6 +58,10 @@ python gui.py
 
 ## 📂 Folder Structure
 │
+├──static              # CSS files
+    ├── uploads        # Uploaded pictures
+├── templates          # Html files
+    ├── html
 ├── colors_test.py     # Outfit scoring and color logic
 ├── db.py              # Database functions
 ├── gui.py             # Tkinter GUI
