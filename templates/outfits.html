@@ -1,6 +1,11 @@
 {% extends "layout.html" %}
 {% block content %}
 <h2 class="mb-4">{{ 'Saved Outfits' if saved else 'Generated Outfits' }}</h2>
+{% if user_input %}
+  {% set input_type = user_input.keys() | list | first %}
+  {% set input_color = user_input[input_type] %}
+  <h3 class="mb-4">For: {{ input_type.capitalize() }} {{ closest_color_name(input_color) }}</h3>
+{% endif %}
 
 <!-- Flex container for horizontal layout -->
 <div class="d-flex flex-wrap gap-3">

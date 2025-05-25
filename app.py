@@ -9,7 +9,7 @@ from itsdangerous import URLSafeTimedSerializer
 from datetime import timedelta
 import os
 from db import *
-from colors_test import get_dominant_color, _closest_color_name, generate_outfit_suggestions
+from colors_test import suggest_outfit_for_item, get_dominant_color, _closest_color_name, generate_outfit_suggestions
 from PIL import Image
 
 load_dotenv()
@@ -18,8 +18,8 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config.update(
-    SESSION_COOKIE_SECURE=True,
-    # SESSION_COOKIE_DOMAIN= '192.168.1.35',    # LAN Domain for cross device acces
+    # SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_DOMAIN= '192.168.1.25',    # LAN Domain for cross device acces
     SESSION_COOKIE_HTTPONLY=True,    # Prevent JS access
     SESSION_COOKIE_SAMESITE='Lax',   # CSRF protection
     PERMANENT_SESSION_LIFETIME=timedelta(days=30),  # For remember me
@@ -272,6 +272,26 @@ def generate():
     outfits = generate_outfit_suggestions({k: [i['rgb'] for i in v] for k, v in wardrobe.items()})
     return render_template('outfits.html', outfits=outfits, closest_color_name= _closest_color_name)
 
+@app.route('/generate-item/<int:item_id>', methods=['POST'])
+def generate_item(item_id):
+    if 'user' not in session:
+        return redirect('/')
+    wardrobe = fetch_wardrobe_items(session['user']['wardrobe_id'])
+    
+    user_input = {}
+    
+    for type, items in wardrobe.items():
+        for item in items:
+            if item['id'] == item_id:
+                rgb = item['rgb']
+                item_type = type
+                user_input = {
+                    item_type: rgb
+                }
+    
+    outfits = suggest_outfit_for_item(user_input, {k: [i['rgb'] for i in v] for k, v in wardrobe.items()})
+    return render_template('outfits.html', outfits=outfits, closest_color_name= _closest_color_name, user_input=user_input)
+    
 @app.route('/save_outfit', methods=['POST'])
 def save_outfit_route():
     try:

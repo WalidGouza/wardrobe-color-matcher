@@ -67,7 +67,6 @@ def _score_outfit(*colors):
     normalized_score = (total_score / max_possible_score) * 5
     return round(normalized_score, 2)
 
-
 # Closest color name using webcolors
 def _closest_color_name(rgb):
     try:
@@ -111,62 +110,59 @@ def generate_outfit_suggestions(wardrobe):
     outfits.sort(key=lambda x: x[3], reverse=True)
     return outfits
 
-    # print("Top Outfit Matches:")
-    # for top, pant, shoe, jacket, score in outfits:
-    #     print(f"Top: {_closest_color_name(top)} | "
-    #         f"Pants: {_closest_color_name(pant)} | "
-    #         f"Shoes: {_closest_color_name(shoe)} | "
-    #         f"Jacket: {_closest_color_name(jacket)} | "
-    #         f"Score: {round(score, 2)}")
-
-    # return output_text
-
 def suggest_outfit_for_item(user_input, wardrobe):
     if len(user_input) != 1:
         print("Please provide exactly one clothing item and its color.")
-        return
+        return []
 
     input_type, input_color = next(iter(user_input.items()))
-    valid_types = {"tops", "pants", "shoes"}
+    valid_types = {"tops", "pants", "shoes", "jackets"}
     
     if input_type not in valid_types:
         print(f"Invalid clothing type: {input_type}. Must be one of {valid_types}.")
-        return
+        return []
 
-    # Identify what we need to match
-    remaining_types = valid_types - {input_type}
-    remaining_items = {ctype: wardrobe.get(ctype, []) for ctype in remaining_types}
+    wardrobe_items = {t: wardrobe.get(t, []) for t in valid_types}
+
+    # Only use jackets if the user has any
+    has_jackets = bool(wardrobe_items["jackets"])
+    jacket_options = wardrobe_items["jackets"] if has_jackets else [None]
+
 
     suggestions = []
 
-    # Generate combinations based on what the user has entered
-    if input_type == "pants":
-        for top in remaining_items["tops"]:
-            for shoe in remaining_items["shoes"]:
-                score = _score_outfit(top, input_color, shoe)
-                suggestions.append((top, input_color, shoe, score))
-    elif input_type == "tops":
-        for pant in remaining_items["pants"]:
-            for shoe in remaining_items["shoes"]:
-                score = _score_outfit(input_color, pant, shoe)
-                suggestions.append((input_color, pant, shoe, score))
-    elif input_type == "shoes":
-        for top in remaining_items["tops"]:
-            for pant in remaining_items["pants"]:
-                score = _score_outfit(top, pant, input_color)
-                suggestions.append((top, pant, input_color, score))
+    # Define how to compute score
+    def build_and_score(top, pant, shoe, jacket):
+        score = _score_outfit(top, pant, shoe, jacket)
+        return (top, pant, shoe, jacket, score)
 
+    # Logic based on input_type
+    if input_type == "tops":
+        for pant in wardrobe_items["pants"]:
+            for shoe in wardrobe_items["shoes"]:
+                for jacket in jacket_options:
+                    suggestions.append(build_and_score(input_color, pant, shoe, jacket))
+    elif input_type == "pants":
+        for top in wardrobe_items["tops"]:
+            for shoe in wardrobe_items["shoes"]:
+                for jacket in jacket_options:
+                    suggestions.append(build_and_score(top, input_color, shoe, jacket))
+    elif input_type == "shoes":
+        for top in wardrobe_items["tops"]:
+            for pant in wardrobe_items["pants"]:
+                for jacket in jacket_options:
+                    suggestions.append(build_and_score(top, pant, input_color, jacket))
+    elif input_type == "jackets":
+        for top in wardrobe_items["tops"]:
+            for pant in wardrobe_items["pants"]:
+                for shoe in wardrobe_items["shoes"]:
+                    suggestions.append(build_and_score(top, pant, shoe, input_color))
+    
     # Filter and sort
     suggestions = [s for s in suggestions]
     suggestions.sort(key=lambda x: x[3], reverse=True)
     
-    # Display results
-    print(f"\nSuggested outfits for your {input_type} color {_closest_color_name(input_color)} ({input_color}):\n")
-    for top, pant, shoe, score in suggestions:
-        print(f"Top: {_closest_color_name(top)} | "
-              f"Pants: {_closest_color_name(pant)} | "
-              f"Shoes: {_closest_color_name(shoe)} | "
-              f"Score: {round(score, 2)}")
+    return suggestions
 
 def prompt_user_for_clothing_types(wardrobe):
     print("Your Wardrobe contains the following categories:")
