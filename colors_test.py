@@ -108,9 +108,6 @@ def generate_outfit_suggestions(wardrobe):
       …
     ]
     """
-    tops    = wardrobe.get("tops", [])
-    pants   = wardrobe.get("pants", [])
-    shoes   = wardrobe.get("shoes", [])
     jackets = wardrobe.get("jackets", [])
     
     outfits = []

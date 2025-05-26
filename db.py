@@ -171,20 +171,40 @@ def fetch_saved_outfits(wardrobe_id):
 
     outfits = []
     for top_id, pant_id, shoe_id, jacket_id, score in rows:
-        outfit = []
-        for item_id in [top_id, pant_id, shoe_id, jacket_id]:
+        outfit = {}
+        item_ids = {
+            'top': top_id,
+            'pants': pant_id,
+            'shoes': shoe_id,
+            'jacket': jacket_id
+        }
+
+        for item_type, item_id in item_ids.items():
             if item_id is None:
-                outfit.append(None)
+                outfit[item_type] = None
                 continue
             with get_connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute("""
-                        SELECT r, g, b FROM clothing_items
+                        SELECT id, type, r, g, b, image_filename
+                        FROM clothing_items
                         WHERE id = %s
                     """, (item_id,))
                     row = cur.fetchone()
-                    outfit.append((int(row[0]), int(row[1]), int(row[2])) if row else None)
-        outfits.append((*outfit, score))
+
+            if row:
+                outfit[item_type] = {
+                    'id': row[0],
+                    'rgb': (int(row[2]), int(row[3]), int(row[4])),
+                    'image': row[5]
+                }
+            else:
+                outfit[item_type] = None
+
+        outfit['score'] = score
+        outfits.append(outfit)
+        outfits.sort(key=lambda o: o['score'], reverse=True)
+
     return outfits
 
 

@@ -339,6 +339,10 @@ def ootd():
 
 @app.route('/save_outfit', methods=['POST'])
 def save_outfit_route():
+    if 'user' not in session:
+        flash("Please log in first.", "warning")
+        return redirect(url_for('login'))
+    
     try:
         t = eval(request.form['top'])
         p = eval(request.form['pants'])
