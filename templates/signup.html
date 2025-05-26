@@ -40,11 +40,17 @@
             name="password"
             type="password"
             class="form-control"
-            id="floatingPassword"
+            id="passwordInput"
             placeholder="Password"
             required
           />
-          <label for="floatingPassword">Password</label>
+          <label for="passwordInput">Password</label>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" value="" id="togglePassword" onclick="togglePasswordVisibility()">
+          <label class="form-check-label" for="togglePassword">
+            Show password
+          </label>
         </div>
         <div class="checkbox mb-3" bis_skin_checked="1">
           <label>
@@ -60,4 +66,11 @@
     </div>
   </div>
 </div>
+<script>
+  function togglePasswordVisibility() {
+    const passwordInput = document.getElementById("passwordInput");
+    const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+    passwordInput.setAttribute("type", type);
+  }
+</script>
 {% endblock %}
