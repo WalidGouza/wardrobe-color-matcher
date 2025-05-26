@@ -90,78 +90,134 @@ def get_dominant_color(image, resize_to=(100, 100)):
 
 # Generate combinations and print
 def generate_outfit_suggestions(wardrobe):
-    
-    tops = wardrobe.get("tops", [])
-    pants = wardrobe.get("pants", [])
-    shoes = wardrobe.get("shoes", [])
+    """
+    wardrobe: {
+      'tops':    [ { 'rgb':(...), 'image':... }, … ],
+      'pants':   [ { … }, … ],
+      'shoes':   [ { … }, … ],
+      'jackets': [ { … }, … ]    # may be empty
+    }
+    Returns: [
+      {
+        'top':    { 'rgb':…, 'image':… },
+        'pants':  { 'rgb':…, 'image':… },
+        'shoes':  { 'rgb':…, 'image':… },
+        'jacket': { 'rgb':…, 'image':… } | None,
+        'score':  float
+      },
+      …
+    ]
+    """
+    tops    = wardrobe.get("tops", [])
+    pants   = wardrobe.get("pants", [])
+    shoes   = wardrobe.get("shoes", [])
     jackets = wardrobe.get("jackets", [])
     
     outfits = []
-    if not jackets:
-        jackets = [None]  # Jacket is optional
 
-    for top, pant, shoe, jacket in product(tops, pants, shoes, jackets):
-        colors = [top, pant, shoe] + ([jacket] if jacket else [])
+    def build_and_append(top_item, pant_item, shoe_item, jacket_item):
+        # pull out the rgb tuples for scoring
+        colors = [top_item['rgb'], pant_item['rgb'], shoe_item['rgb']]
+        if jacket_item:
+            colors.append(jacket_item['rgb'])
         score = _score_outfit(*colors)
         if score > MIN_ACCEPTABLE_SCORE:
-            outfits.append((top, pant, shoe, jacket, score))
+            outfits.append({
+                'top':    top_item,
+                'pants':  pant_item,
+                'shoes':  shoe_item,
+                'jacket': jacket_item,
+                'score':  score
+            })
 
-    # Sort outfits by score
-    outfits.sort(key=lambda x: x[3], reverse=True)
+    if jackets:
+        # with jacket
+        for top_it, pant_it, shoe_it, jacket_it in product(wardrobe['tops'], wardrobe['pants'], wardrobe['shoes'], wardrobe['jackets']):
+            build_and_append(top_it, pant_it, shoe_it, jacket_it)
+        # without jacket
+        for top_it, pant_it, shoe_it in product(wardrobe['tops'], wardrobe['pants'], wardrobe['shoes']):
+            build_and_append(top_it, pant_it, shoe_it, None)
+    else:
+        # only without jacket
+        for top_it, pant_it, shoe_it in product(wardrobe['tops'], wardrobe['pants'], wardrobe['shoes']):
+            build_and_append(top_it, pant_it, shoe_it, None)
+
+    # sort by score descending
+    outfits.sort(key=lambda o: o['score'], reverse=True)
     return outfits
 
 def suggest_outfit_for_item(user_input, wardrobe):
+    """
+    user_input: dict like { 'tops': (r, g, b) } — one key only
+    wardrobe:   dict with keys 'tops', 'pants', etc.
+                and values like: [ { 'rgb':…, 'image':… }, … ]
+    returns: list of dicts like:
+        {
+            'top':    { … },
+            'pants':  { … },
+            'shoes':  { … },
+            'jacket': { … } or None,
+            'score':  float
+        }
+    """
     if len(user_input) != 1:
         print("Please provide exactly one clothing item and its color.")
         return []
 
-    input_type, input_color = next(iter(user_input.items()))
+    input_type, input_rgb = next(iter(user_input.items()))
     valid_types = {"tops", "pants", "shoes", "jackets"}
-    
+
     if input_type not in valid_types:
         print(f"Invalid clothing type: {input_type}. Must be one of {valid_types}.")
         return []
 
     wardrobe_items = {t: wardrobe.get(t, []) for t in valid_types}
-
-    # Only use jackets if the user has any
     has_jackets = bool(wardrobe_items["jackets"])
-    jacket_options = wardrobe_items["jackets"] if has_jackets else [None]
-
+    jacket_options = wardrobe_items["jackets"]
+    jacket_options_with_none = jacket_options + [None] if has_jackets else [None]
 
     suggestions = []
 
-    # Define how to compute score
-    def build_and_score(top, pant, shoe, jacket):
-        score = _score_outfit(top, pant, shoe, jacket)
-        return (top, pant, shoe, jacket, score)
+    def build_outfit(top, pant, shoe, jacket):
+        colors = [top['rgb'], pant['rgb'], shoe['rgb']]
+        if jacket:
+            colors.append(jacket['rgb'])
+        score = _score_outfit(*colors)
+        if score > MIN_ACCEPTABLE_SCORE:
+            suggestions.append({
+                'top': top,
+                'pants': pant,
+                'shoes': shoe,
+                'jacket': jacket,
+                'score': score
+            })
 
-    # Logic based on input_type
     if input_type == "tops":
         for pant in wardrobe_items["pants"]:
             for shoe in wardrobe_items["shoes"]:
-                for jacket in jacket_options:
-                    suggestions.append(build_and_score(input_color, pant, shoe, jacket))
+                for jacket in jacket_options_with_none:
+                    top = {'rgb': input_rgb, 'image': None}
+                    build_outfit(top, pant, shoe, jacket)
     elif input_type == "pants":
         for top in wardrobe_items["tops"]:
             for shoe in wardrobe_items["shoes"]:
-                for jacket in jacket_options:
-                    suggestions.append(build_and_score(top, input_color, shoe, jacket))
+                for jacket in jacket_options_with_none:
+                    pant = {'rgb': input_rgb, 'image': None}
+                    build_outfit(top, pant, shoe, jacket)
     elif input_type == "shoes":
         for top in wardrobe_items["tops"]:
             for pant in wardrobe_items["pants"]:
-                for jacket in jacket_options:
-                    suggestions.append(build_and_score(top, pant, input_color, jacket))
+                for jacket in jacket_options_with_none:
+                    shoe = {'rgb': input_rgb, 'image': None}
+                    build_outfit(top, pant, shoe, jacket)
     elif input_type == "jackets":
         for top in wardrobe_items["tops"]:
             for pant in wardrobe_items["pants"]:
                 for shoe in wardrobe_items["shoes"]:
-                    suggestions.append(build_and_score(top, pant, shoe, input_color))
-    
-    # Filter and sort
-    suggestions = [s for s in suggestions]
-    suggestions.sort(key=lambda x: x[3], reverse=True)
-    
+                    jacket = {'rgb': input_rgb, 'image': None}
+                    build_outfit(top, pant, shoe, jacket)
+
+    suggestions.sort(key=lambda o: o['score'], reverse=True)
     return suggestions
 
 def prompt_user_for_clothing_types(wardrobe):

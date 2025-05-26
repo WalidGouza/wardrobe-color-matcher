@@ -1,0 +1,37 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="text-center">
+  <h1 class="mb-4">🌟 Outfit of the Day</h1>
+  <p class="mb-4 text-secondary">Score: <strong>{{ selected_outfit.score }}</strong>/5</p>
+
+  <div class="d-flex flex-column align-items-center gap-4">
+
+    {% if selected_outfit.jacket %}
+    <div>
+      <img src="{{ url_for('static', filename='uploads/' ~ selected_outfit.jacket.image) }}"
+           alt="Jacket" class="img-thumbnail shadow-sm" style="max-height: 180px;">
+      <p class="mt-2 text-muted">Jacket</p>
+    </div>
+    {% endif %}
+
+    <div>
+      <img src="{{ url_for('static', filename='uploads/' ~ selected_outfit.top.image) }}"
+           alt="Top" class="img-thumbnail shadow-sm" style="max-height: 180px;">
+      <p class="mt-2 text-muted">Top</p>
+    </div>
+
+    <div>
+      <img src="{{ url_for('static', filename='uploads/' ~ selected_outfit.pants.image) }}"
+           alt="Pants" class="img-thumbnail shadow-sm" style="max-height: 180px;">
+      <p class="mt-2 text-muted">Pants</p>
+    </div>
+
+    <div>
+      <img src="{{ url_for('static', filename='uploads/' ~ selected_outfit.shoes.image) }}"
+           alt="Shoes" class="img-thumbnail shadow-sm" style="max-height: 180px;">
+      <p class="mt-2 text-muted">Shoes</p>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -7,23 +7,33 @@
   <h3 class="mb-4">For: {{ input_type.capitalize() }} {{ closest_color_name(input_color) }}</h3>
 {% endif %}
 
+<div class="btn-group mb-3" role="group" aria-label="Filter Outfits">
+  <button class="btn btn-outline-light active" onclick="filterOutfits('all')">All</button>
+  <button class="btn btn-outline-light" onclick="filterOutfits('with-jacket')">With Jacket</button>
+  <button class="btn btn-outline-light" onclick="filterOutfits('no-jacket')">No Jacket</button>
+</div>
+
 <!-- Flex container for horizontal layout -->
 <div class="d-flex flex-wrap gap-3">
   {% for o in outfits %}
-    <form method="POST" action="{{ url_for('save_outfit_route') }}" class="card p-3 shadow-sm" style="width: 18rem;">
+      {% set has_jacket = o['jacket'] is not none %}
+      <form method="POST" action="{{ url_for('save_outfit_route') }}"
+      class="card p-3 shadow-sm outfit-card {{ 'with-jacket' if has_jacket else 'no-jacket' }}"
+      style="width: 18rem;">
+
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">  
       <pre class="mb-2">
-Top: {{ closest_color_name(o[0]) }} {{ o[0] }}
-Pants: {{ closest_color_name(o[1]) }} {{ o[1] }}
-Shoes: {{ closest_color_name(o[2]) }} {{ o[2] }}
-{% if o|length == 5 and o[3] %}Jacket: {{ closest_color_name(o[3]) }} {{ o[3] }}{% endif %}
-Score: {{ o[-1] }}
+{% if o['jacket'] %}Jacket: {{ closest_color_name(o['jacket']['rgb']) }} {{ o['jacket']['rgb'] }}{% endif %}
+Top: {{ closest_color_name(o['top']['rgb']) }} {{ o['top']['rgb'] }}
+Pants: {{ closest_color_name(o['pants']['rgb']) }} {{ o['pants']['rgb'] }}
+Shoes: {{ closest_color_name(o['shoes']['rgb']) }} {{ o['shoes']['rgb'] }}
+Score: {{ o['score'] }}
         </pre>
-        <input type="hidden" name="top" value="{{ o[0] }}">
-        <input type="hidden" name="pants" value="{{ o[1] }}">
-        <input type="hidden" name="shoes" value="{{ o[2] }}">
-        <input type="hidden" name="jacket" value="{{ o[3] if o|length == 5 else '' }}">
-        <input type="hidden" name="score" value="{{ o[-1] }}">
+        <input type="hidden" name="top" value="{{ o['top']['rgb'] }}">
+        <input type="hidden" name="pants" value="{{ o['pants']['rgb'] }}">
+        <input type="hidden" name="shoes" value="{{ o['shoes']['rgb'] }}">
+        <input type="hidden" name="jacket" value="{{ o['jacket']['rgb'] if o['jacket'] else '' }}">
+        <input type="hidden" name="score" value="{{ o['score'] }}">
         {% if not saved %}
           <button type="submit" class="btn btn-outline-success">Save Outfit</button>
         {% endif %}
@@ -32,4 +42,27 @@ Score: {{ o[-1] }}
 </div>
 
 <a href="{{ url_for('wardrobe') }}" class="btn btn-link mt-3">⬅ Back to Wardrobe</a>
+
+<script>
+  function filterOutfits(type) {
+    const allCards = document.querySelectorAll('.outfit-card');
+    allCards.forEach(card => {
+      const isWithJacket = card.classList.contains('with-jacket');
+      const isNoJacket = card.classList.contains('no-jacket');
+
+      if (type === 'all') {
+        card.style.display = '';
+      } else if (type === 'with-jacket') {
+        card.style.display = isWithJacket ? '' : 'none';
+      } else if (type === 'no-jacket') {
+        card.style.display = isNoJacket ? '' : 'none';
+      }
+    });
+
+    // Update button states
+    document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`.btn-group .btn[onclick="filterOutfits('${type}')"]`).classList.add('active');
+  }
+</script>
+
 {% endblock %}

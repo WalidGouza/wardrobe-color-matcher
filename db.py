@@ -96,19 +96,20 @@ def get_wardrobe_id(username):
 def get_connection():
     return psycopg2.connect(**DB_CONFIG)
 
-def insert_clothing_item(wardrobe_id, clothing_type, rgb):
+def insert_clothing_item(wardrobe_id, clothing_type, rgb, image_filename):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO clothing_items (wardrobe_id, type, r, g, b)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (wardrobe_id, clothing_type, rgb[0], rgb[1], rgb[2]))
+                INSERT INTO clothing_items (wardrobe_id, type, r, g, b, image_filename)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (wardrobe_id, clothing_type, rgb[0], rgb[1], rgb[2], image_filename))
+
 
 def fetch_wardrobe_items(wardrobe_id):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT id, type, r, g, b
+                SELECT id, type, r, g, b, image_filename
                 FROM clothing_items
                 WHERE wardrobe_id = %s
                 ORDER BY type
@@ -116,10 +117,13 @@ def fetch_wardrobe_items(wardrobe_id):
             rows = cur.fetchall()
     
     wardrobe = {'tops': [], 'pants': [], 'shoes': [], 'jackets': []}
-    for item_id, clothing_type, r, g, b in rows:
+    for item_id, clothing_type, r, g, b, image_filename in rows:
         if clothing_type in wardrobe:
-            rgb = (int(r), int(g), int(b))
-            wardrobe[clothing_type].append({'id': item_id, 'rgb': (r, g, b)})
+            wardrobe[clothing_type].append({
+                'id': item_id,
+                'rgb': (r, g, b),
+                'image': image_filename
+            })
     return wardrobe
 
 def save_outfit(wardrobe_id, top_id, pant_id, shoe_id, jacket_id, score):

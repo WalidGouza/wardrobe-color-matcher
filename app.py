@@ -11,6 +11,8 @@ import os
 from db import *
 from colors_test import suggest_outfit_for_item, get_dominant_color, _closest_color_name, generate_outfit_suggestions
 from PIL import Image
+import random
+from datetime import date
 
 load_dotenv()
 
@@ -239,24 +241,48 @@ def wardrobe():
 @app.route('/upload', methods=['POST'])
 def upload():
     if 'user' not in session:
-        return redirect('/')
-    
-    if 'image' not in request.files or 'category' not in request.form:
-        flash("Image and category are required", "danger")
-        return redirect(url_for('wardrobe'))
-    user = User.from_dict(session['user'])
-    
-    file = request.files['image']
-    category = request.form['category']
-    filename = secure_filename(file.filename)
-    path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(path)
+        flash("Please log in to upload items.", "warning")
+        return redirect(url_for('login'))
 
-    image = Image.open(path).convert('RGB')
-    rgb = get_dominant_color(image)
-    insert_clothing_item(user.wardrobe_id, category, rgb)
-    name = _closest_color_name(rgb)
-    flash(f"Added {name} {rgb} to {category}", "success")
+    # Validate form
+    file = request.files.get('image')
+    category = request.form.get('category')
+    if not file or not category:
+        flash("Image and category are required.", "danger")
+        return redirect(url_for('wardrobe'))
+
+    # Check file extension
+    if not allowed_file(file.filename):
+        flash("Invalid file type. Please upload a .jpg, .jpeg, or .png image.", "danger")
+        return redirect(url_for('wardrobe'))
+
+    user = User.from_dict(session['user'])
+
+    # Generate safe and unique filename
+    ext = file.filename.rsplit('.', 1)[1].lower()
+    raw_name = secure_filename(file.filename.rsplit('.', 1)[0])
+    filename = secure_filename(f"{category}_{user.id}_{raw_name}.{ext}")
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(file_path)
+
+    # Extract dominant color
+    try:
+        image = Image.open(file_path).convert('RGB')
+        rgb = get_dominant_color(image)
+    except Exception as e:
+        print("Image processing error:", e)
+        flash("Failed to process the image.", "danger")
+        return redirect(url_for('wardrobe'))
+
+    # Save to DB with filename
+    try:
+        insert_clothing_item(user.wardrobe_id, category, rgb, filename)
+        color_name = _closest_color_name(rgb)
+        flash(f"✅ Added {color_name} {rgb} to {category}.", "success")
+    except Exception as e:
+        print("Database insert error:", e)
+        flash("❌ Failed to save clothing item.", "danger")
+
     return redirect(url_for('wardrobe'))
 
 @app.route('/delete/<int:item_id>', methods=['POST'])
@@ -269,15 +295,16 @@ def generate():
     if 'user' not in session:
         return redirect('/')
     wardrobe = fetch_wardrobe_items(session['user']['wardrobe_id'])
-    outfits = generate_outfit_suggestions({k: [i['rgb'] for i in v] for k, v in wardrobe.items()})
+    outfits = generate_outfit_suggestions(wardrobe)
+    print(wardrobe)
     return render_template('outfits.html', outfits=outfits, closest_color_name= _closest_color_name)
 
 @app.route('/generate-item/<int:item_id>', methods=['POST'])
 def generate_item(item_id):
     if 'user' not in session:
         return redirect('/')
-    wardrobe = fetch_wardrobe_items(session['user']['wardrobe_id'])
     
+    wardrobe = fetch_wardrobe_items(session['user']['wardrobe_id'])
     user_input = {}
     
     for type, items in wardrobe.items():
@@ -289,9 +316,27 @@ def generate_item(item_id):
                     item_type: rgb
                 }
     
-    outfits = suggest_outfit_for_item(user_input, {k: [i['rgb'] for i in v] for k, v in wardrobe.items()})
+    outfits = suggest_outfit_for_item(user_input, wardrobe)
     return render_template('outfits.html', outfits=outfits, closest_color_name= _closest_color_name, user_input=user_input)
-    
+
+@app.route('/ootd')
+def ootd():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+
+    user = User.from_dict(session['user'])
+    wardrobe = fetch_wardrobe_items(user.wardrobe_id)
+    outfits = generate_outfit_suggestions(wardrobe)
+
+    if not outfits:
+        flash("No saved outfits yet!", "warning")
+        return redirect(url_for('wardrobe'))
+
+    # Pick one outfit per day based on the date
+    random.seed(date.today().isoformat())
+    selected_outfit = random.choice(outfits)
+    return render_template('ootd.html', selected_outfit=selected_outfit)
+
 @app.route('/save_outfit', methods=['POST'])
 def save_outfit_route():
     try:
