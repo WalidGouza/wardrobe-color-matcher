@@ -22,13 +22,45 @@
       style="width: 18rem;">
 
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">  
-      <pre class="mb-2">
+      <!-- <pre class="mb-2">
 {% if o['jacket'] %}Jacket: {{ closest_color_name(o['jacket']['rgb']) }} {{ o['jacket']['rgb'] }}{% endif %}
 Top: {{ closest_color_name(o['top']['rgb']) }} {{ o['top']['rgb'] }}
 Pants: {{ closest_color_name(o['pants']['rgb']) }} {{ o['pants']['rgb'] }}
 Shoes: {{ closest_color_name(o['shoes']['rgb']) }} {{ o['shoes']['rgb'] }}
 Score: {{ o['score'] }}
-        </pre>
+        </pre> -->
+
+      <div class="d-flex flex-column align-items-center gap-4">
+        <p class="mb-4 text-secondary">Score: <strong>{{ o.score }}</strong>/5</p>
+
+        {% if o.jacket %}
+        <div>
+          <img src="{{ url_for('static', filename='uploads/' ~ o.jacket.image) }}"
+              alt="Jacket" class="img-thumbnail shadow-sm" style="max-height: 180px;">
+          <p class="mt-2 text-muted">Jacket</p>
+        </div>
+        {% endif %}
+
+        <div>
+          <img src="{{ url_for('static', filename='uploads/' ~ o.top.image) }}"
+              alt="Top" class="img-thumbnail shadow-sm" style="max-height: 180px;">
+          <p class="mt-2 text-muted">Top</p>
+        </div>
+
+        <div>
+          <img src="{{ url_for('static', filename='uploads/' ~ o.pants.image) }}"
+              alt="Pants" class="img-thumbnail shadow-sm" style="max-height: 180px;">
+          <p class="mt-2 text-muted">Pants</p>
+        </div>
+
+        <div>
+          <img src="{{ url_for('static', filename='uploads/' ~ o.shoes.image) }}"
+              alt="Shoes" class="img-thumbnail shadow-sm" style="max-height: 180px;">
+          <p class="mt-2 text-muted">Shoes</p>
+        </div>
+
+      </div>
+
         <input type="hidden" name="top" value="{{ o['top']['rgb'] }}">
         <input type="hidden" name="pants" value="{{ o['pants']['rgb'] }}">
         <input type="hidden" name="shoes" value="{{ o['shoes']['rgb'] }}">
