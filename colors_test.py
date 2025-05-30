@@ -2,6 +2,9 @@ import colorsys
 import webcolors
 from itertools import product, combinations
 from collections import Counter
+import base64
+from io import BytesIO
+from PIL import Image
 
 MIN_ACCEPTABLE_SCORE = 2.5
 
@@ -81,6 +84,13 @@ def _closest_color_name(rgb):
                 min_distance = dist
                 closest_name = name.title()
         return closest_name
+
+def generate_color_box_base64(rgb, size=(200, 200)):
+    img = Image.new('RGB', size, rgb)
+    buffer = BytesIO()
+    img.save(buffer, format='PNG')
+    base64_img = base64.b64encode(buffer.getvalue()).decode('utf-8')
+    return f"data:image/png;base64,{base64_img}"
 
 def get_dominant_color(image, resize_to=(100, 100)):
     small_img = image.resize(resize_to)
@@ -247,11 +257,115 @@ def generate_outfits_based_on_selection(wardrobe, selected_types):
         desc = [f"{ctype.capitalize()}: {_closest_color_name(c)}" for ctype, c in zip(selected_types, combo)]
         print(" | ".join(desc) + f" | Score: {round(score, 2)}")
 
+def suggestions_for_item(user_input):
+    """
+    Suggests matching color combinations for a given clothing item.
+    Not based on wardrobe — provides guidance for potential future purchases.
 
+    :param user_input: dict — 'type': one of "tops", "pants", "shoes", or "jackets", 'rgb': (R, G, B) values of the chosen item
+    :return: list of suggestions, each as a dict of id, item-type to RGB values, image
+    """
+
+    input_type, input_rgb = next(iter(user_input.items()))
+    
+    valid_types = {"tops", "pants", "shoes", "jackets"}
+    if input_type not in valid_types:
+        raise ValueError(f"Invalid input_type: {input_type}. Must be one of {valid_types}.")
+
+    # These are example classic wardrobe-friendly colors per category
+    sample_colors = {
+        'tops': [
+            (255, 255, 255),  # white
+            (0, 0, 0),        # black
+            (210, 180, 140),  # tan
+            (144, 238, 144),  # light green
+            (173, 216, 230),  # light blue
+        ],
+        'pants': [
+            (255, 255, 255),  # white
+            (0, 0, 0),        # black
+            (245, 245, 220),  # beige
+            (128, 128, 128),  # gray
+            (0, 0, 128),      # navy
+        ],
+        'shoes': [
+            (0, 0, 0),        # black
+            (255, 255, 255),  # white
+            (160, 82, 45),    # brown
+        ],
+        'jackets': [
+            (0, 0, 0),        # black
+            (255, 255, 255),  # white
+            (128, 128, 128),  # gray
+            (245, 245, 220),  # beige
+        ]
+    }
+
+    def generate_theory_colors(base_rgb):
+        h, s, v = ___rgb_to_hsv(base_rgb)
+        dynamic = set()
+
+        # Complementary
+        dynamic.add(tuple(map(int, __get_complementary_color(base_rgb))))
+
+        # Analogous ±30°
+        for offset in (-30, 30):
+            h_rot = (h + offset / 360.0) % 1.0
+            dynamic.add(tuple(map(int, ___hsv_to_rgb((h_rot, s, v)))))
+
+        # Neutrals
+        dynamic.update([
+            (255, 255, 255), (0, 0, 0),
+            (128, 128, 128), (245, 245, 220), (160, 82, 45)
+        ])
+
+        return list(dynamic)
+
+    all_types = ['tops', 'pants', 'shoes', 'jackets']
+    palette = {}
+    
+    for t in all_types:
+        if t == input_type:
+            continue
+        if t == 'jackets':
+            palette[t] = sample_colors[t]
+        else:
+            palette[t] = list(set(sample_colors[t] + generate_theory_colors(input_rgb)))
+
+    jacket_options = palette['jackets'] + [None] if input_type != 'jackets' else [input_rgb, None]
+    tops_options = palette['tops'] if input_type != 'tops' else [input_rgb]
+    pants_options = palette['pants'] if input_type != 'pants' else [input_rgb]
+    shoes_options = palette['shoes'] if input_type != 'shoes' else [input_rgb]
+
+    suggestions = []
+    for top, pant, shoe, jacket in product(tops_options, pants_options, shoes_options, jacket_options):
+        parts = {
+            'top': top,
+            'pants': pant,
+            'shoes': shoe,
+            'jacket': jacket
+        }
+
+        colors = [c for c in [top, pant, shoe, jacket] if c is not None]
+        score = _score_outfit(*colors)
+        if score >= 3.0:
+            suggestions.append({
+                'top': {'rgb': parts['top'], 'image': generate_color_box_base64(parts['top'])},
+                'pants': {'rgb': parts['pants'], 'image': generate_color_box_base64(parts['pants'])},
+                'shoes': {'rgb': parts['shoes'], 'image': generate_color_box_base64(parts['shoes'])},
+                'jacket': {'rgb': parts['jacket'], 'image': generate_color_box_base64(parts['jacket'])} if parts['jacket'] else None,
+                'score': round(score, 2)
+            })
+
+    # Sort suggestions by score descending
+    suggestions.sort(key=lambda x: x['score'], reverse=True)
+    
+    return suggestions
+    
 if __name__ == '__main__':
     # Example inputs
     user_input = {
-            "pants": (0, 0, 0)
+            "tops": (0, 0, 0)
         }
     
     wardrobe = {
@@ -282,9 +396,9 @@ if __name__ == '__main__':
         ]
     }
     
-    selected = prompt_user_for_clothing_types(wardrobe)
-    generate_outfits_based_on_selection(wardrobe, selected)
-    
+    suggestions = suggestions_for_item(user_input)
+    print(suggestions)
+    # selected = prompt_user_for_clothing_types(wardrobe)
+    # generate_outfits_based_on_selection(wardrobe, selected)
     # generate_and_print_outfits(wardrobe)
     # suggest_outfit_for_item(user_input, wardrobe)
-    

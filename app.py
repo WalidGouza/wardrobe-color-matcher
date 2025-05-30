@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, redirect, session, url_for, flash
+from flask import Flask, render_template, request, redirect, session, url_for, flash, send_file
+from io import BytesIO
 from werkzeug.utils import secure_filename
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
@@ -7,9 +8,10 @@ from email_validator import validate_email, EmailNotValidError
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
 from datetime import timedelta
+from functools import wraps
 import os
 from db import *
-from colors_test import suggest_outfit_for_item, get_dominant_color, _closest_color_name, generate_outfit_suggestions
+from colors_test import suggestions_for_item, suggest_outfit_for_item, get_dominant_color, _closest_color_name, generate_outfit_suggestions
 from PIL import Image
 import random
 from datetime import date
@@ -104,11 +106,19 @@ limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["200 per day", "50 per hour"]
 )
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 @app.route('/')
 def home():
     return render_template('home.html')
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user' not in session:
+            flash('Please login first', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("10 per hour", methods=['POST'])
@@ -137,6 +147,7 @@ def login():
     return render_template('login.html')
 
 @app.route('/signup', methods=['GET', 'POST'])
+@limiter.limit("3 per hour", methods=['POST'])
 def signup():
     if request.method == 'POST':
         username = request.form['username'].strip()
@@ -178,11 +189,8 @@ def confirm_email(token):
         return redirect(url_for('signup'))
 
 @app.route('/edit-profile', methods=['POST'])
+@login_required
 def edit_profile():
-    if 'user' not in session:
-        flash("Please log in.", "warning")
-        return redirect(url_for('login'))
-
     user = User.from_dict(session['user'])
     new_username = request.form.get('username', '').strip()
     new_password = request.form.get('password', '').strip()
@@ -216,10 +224,8 @@ def edit_profile():
     return redirect(url_for('account'))
 
 @app.route('/delete-account', methods=['POST'])
+@login_required
 def delete_account():
-    if 'user' not in session:
-        flash("You're not logged in.", "warning")
-        return redirect(url_for('login'))
 
     username = session['user']['username']
     delete_user_account(username)
@@ -229,20 +235,16 @@ def delete_account():
 
 
 @app.route('/wardrobe')
+@login_required
 def wardrobe():
-    if 'user' not in session:
-        flash("Please log in.", "warning")
-        return redirect(url_for('login'))
     user = User.from_dict(session['user'])
     items = fetch_wardrobe_items(user.wardrobe_id)
     return render_template('wardrobe.html', items=items, username=user.username, closest_color_name=_closest_color_name)
 
 
 @app.route('/upload', methods=['POST'])
+@login_required
 def upload():
-    if 'user' not in session:
-        flash("Please log in to upload items.", "warning")
-        return redirect(url_for('login'))
 
     # Validate form
     file = request.files.get('image')
@@ -286,23 +288,22 @@ def upload():
     return redirect(url_for('wardrobe'))
 
 @app.route('/delete/<int:item_id>', methods=['POST'])
+@login_required
 def delete(item_id):
     delete_clothing_item(item_id)
     return redirect(url_for('wardrobe'))
 
 @app.route('/generate')
+@login_required
 def generate():
-    if 'user' not in session:
-        return redirect('/')
     wardrobe = fetch_wardrobe_items(session['user']['wardrobe_id'])
     outfits = generate_outfit_suggestions(wardrobe)
     print(wardrobe)
     return render_template('outfits.html', outfits=outfits, closest_color_name= _closest_color_name)
 
 @app.route('/generate-item/<int:item_id>', methods=['POST'])
+@login_required
 def generate_item(item_id):
-    if 'user' not in session:
-        return redirect('/')
     
     wardrobe = fetch_wardrobe_items(session['user']['wardrobe_id'])
     user_input = {}
@@ -320,9 +321,8 @@ def generate_item(item_id):
     return render_template('outfits.html', outfits=outfits, closest_color_name= _closest_color_name, user_input=user_input)
 
 @app.route('/ootd')
+@login_required
 def ootd():
-    if 'user' not in session:
-        return redirect(url_for('login'))
 
     user = User.from_dict(session['user'])
     wardrobe = fetch_wardrobe_items(user.wardrobe_id)
@@ -337,11 +337,29 @@ def ootd():
     selected_outfit = random.choice(outfits)
     return render_template('ootd.html', selected_outfit=selected_outfit)
 
+@app.route('/suggestions/<int:item_id>', methods=['GET', 'POST'])
+@login_required
+def suggestions(item_id):
+    
+    user = User.from_dict(session['user'])
+    user_input = {}
+    wardrobe = fetch_wardrobe_items(user.wardrobe_id)
+    for type, items in wardrobe.items():
+        for item in items:
+            if item['id'] == item_id:
+                rgb = item['rgb']
+                item_type = type
+                user_input = {
+                    item_type: rgb
+                }
+    
+    suggestions = suggestions_for_item(user_input)
+    
+    return render_template('suggestions.html', suggestions=suggestions, closest_color_name=_closest_color_name)
+
 @app.route('/save_outfit', methods=['POST'])
+@login_required
 def save_outfit_route():
-    if 'user' not in session:
-        flash("Please log in first.", "warning")
-        return redirect(url_for('login'))
     
     try:
         t = eval(request.form['top'])
@@ -363,9 +381,8 @@ def save_outfit_route():
     return redirect(url_for('generate'))
 
 @app.route('/saved')
+@login_required
 def saved():
-    if 'user' not in session:
-        return redirect('/')
     outfits = fetch_saved_outfits(session['user']['wardrobe_id'])
     return render_template('outfits.html', outfits=outfits, saved=True, closest_color_name= _closest_color_name)
 

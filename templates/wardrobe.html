@@ -39,6 +39,10 @@
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-success px-3">Choose</button>
             </form>
+            <form method="POST" action="{{ url_for('suggestions', item_id=item.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-info px-3">Tips</button>
+            </form>
           </div>
         </li>
       {% endfor %}

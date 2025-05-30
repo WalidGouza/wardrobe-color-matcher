@@ -1,11 +1,5 @@
 {% extends "layout.html" %}
 {% block content %}
-<h2 class="mb-4">{{ 'Saved Outfits' if saved else 'Generated Outfits' }}</h2>
-{% if user_input %}
-  {% set input_type = user_input.keys() | list | first %}
-  {% set input_color = user_input[input_type] %}
-  <h3 class="mb-4">For: {{ input_type.capitalize() }} {{ closest_color_name(input_color) }}</h3>
-{% endif %}
 
 <div class="btn-group mb-3" role="group" aria-label="Filter Outfits">
   <button class="btn btn-outline-light active" onclick="filterOutfits('all')">All</button>
@@ -13,10 +7,9 @@
   <button class="btn btn-outline-light" onclick="filterOutfits('no-jacket')">No Jacket</button>
 </div>
 
-<!-- Flex container for horizontal layout -->
 <div class="d-flex flex-wrap gap-3">
-  {% for o in outfits %}
-    {% set has_jacket = o['jacket'] is not none %}
+  {% for sugg in suggestions %}
+    {% set has_jacket = sugg['jacket'] is not none %}
     <form method="POST" action="{{ url_for('save_outfit_route') }}"
     class="card p-3 shadow-sm outfit-card {{ 'with-jacket' if has_jacket else 'no-jacket' }}"
     style="width: 18rem;">
@@ -24,44 +17,36 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
       <div class="d-flex flex-column align-items-center gap-4">
-        <p class="mb-4 text-secondary">Score: <strong>{{ o.score }}</strong>/5</p>
+        <p class="mb-4 text-secondary">Score: <strong>{{ sugg['score'] }}</strong>/5</p>
 
-        {% if o.jacket %}
+        {% if sugg['jacket'] %}
         <div>
-          <img src="{{ url_for('static', filename='uploads/' ~ o.jacket.image) }}"
+          <img src="{{ sugg['jacket']['image'] }}"
               alt="Jacket" class="img-thumbnail shadow-sm" style="max-height: 180px;">
-          <p class="mt-2 text-muted">Jacket</p>
+          <p class="mt-2 text-muted">{{ closest_color_name(sugg['jacket']['rgb']) }} Jacket</p>
         </div>
         {% endif %}
 
         <div>
-          <img src="{{ url_for('static', filename='uploads/' ~ o.top.image) }}"
+          <img src="{{ sugg['top']['image'] }}"
               alt="Top" class="img-thumbnail shadow-sm" style="max-height: 180px;">
-          <p class="mt-2 text-muted">Top</p>
+          <p class="mt-2 text-muted">{{ closest_color_name(sugg['top']['rgb']) }} Top</p>
         </div>
 
         <div>
-          <img src="{{ url_for('static', filename='uploads/' ~ o.pants.image) }}"
+          <img src="{{ sugg['pants']['image'] }}"
               alt="Pants" class="img-thumbnail shadow-sm" style="max-height: 180px;">
-          <p class="mt-2 text-muted">Pants</p>
+          <p class="mt-2 text-muted">{{ closest_color_name(sugg['pants']['rgb']) }} Pants</p>
         </div>
 
         <div>
-          <img src="{{ url_for('static', filename='uploads/' ~ o.shoes.image) }}"
+          <img src="{{ sugg['shoes']['image'] }}"
               alt="Shoes" class="img-thumbnail shadow-sm" style="max-height: 180px;">
-          <p class="mt-2 text-muted">Shoes</p>
+          <p class="mt-2 text-muted">{{ closest_color_name(sugg['shoes']['rgb']) }} Shoes</p>
         </div>
 
       </div>
 
-        <input type="hidden" name="top" value="{{ o['top']['rgb'] }}">
-        <input type="hidden" name="pants" value="{{ o['pants']['rgb'] }}">
-        <input type="hidden" name="shoes" value="{{ o['shoes']['rgb'] }}">
-        <input type="hidden" name="jacket" value="{{ o['jacket']['rgb'] if o['jacket'] else '' }}">
-        <input type="hidden" name="score" value="{{ o['score'] }}">
-        {% if not saved %}
-          <button type="submit" class="btn btn-outline-success">Save Outfit</button>
-        {% endif %}
     </form>
   {% endfor %}
 </div>
