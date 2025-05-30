@@ -1,5 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, url_for, flash, send_file
-from io import BytesIO
+from flask import Flask, render_template, request, redirect, session, url_for, flash
 from werkzeug.utils import secure_filename
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
@@ -15,6 +14,7 @@ from colors_test import suggestions_for_item, suggest_outfit_for_item, get_domin
 from PIL import Image
 import random
 from datetime import date
+from elk_logger import log_outfit_to_elasticsearch
 
 load_dotenv()
 
@@ -298,7 +298,8 @@ def delete(item_id):
 def generate():
     wardrobe = fetch_wardrobe_items(session['user']['wardrobe_id'])
     outfits = generate_outfit_suggestions(wardrobe)
-    print(wardrobe)
+    for outfit in outfits:
+        log_outfit_to_elasticsearch(outfit, session.get('user'))
     return render_template('outfits.html', outfits=outfits, closest_color_name= _closest_color_name)
 
 @app.route('/generate-item/<int:item_id>', methods=['POST'])
