@@ -1,5 +1,8 @@
 {% extends "layout.html" %}
 {% block content %}
+{% set input_type = user_input.keys() | list | first %}
+{% set input_color = user_input[input_type] %}
+<h2 class="mb-4">Outfit Sugestions For {{ closest_color_name(input_color) }} {{ input_type}}</h2>
 
 <div class="btn-group mb-3" role="group" aria-label="Filter Outfits">
   <button class="btn btn-outline-light active" onclick="filterOutfits('all')">All</button>

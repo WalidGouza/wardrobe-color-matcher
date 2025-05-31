@@ -309,15 +309,16 @@ def generate_item(item_id):
     wardrobe = fetch_wardrobe_items(session['user']['wardrobe_id'])
     user_input = {}
     
-    for type, items in wardrobe.items():
+    for item_type, items in wardrobe.items():
         for item in items:
             if item['id'] == item_id:
-                rgb = item['rgb']
-                item_type = type
                 user_input = {
-                    item_type: rgb
-                }
-    
+                                'id': item_id,
+                                'type': item_type,
+                                'rgb': item['rgb'],
+                                'image': item['image']
+                            }
+
     outfits = suggest_outfit_for_item(user_input, wardrobe)
     return render_template('outfits.html', outfits=outfits, closest_color_name= _closest_color_name, user_input=user_input)
 
@@ -356,7 +357,7 @@ def suggestions(item_id):
     
     suggestions = suggestions_for_item(user_input)
     
-    return render_template('suggestions.html', suggestions=suggestions, closest_color_name=_closest_color_name)
+    return render_template('suggestions.html', suggestions=suggestions, closest_color_name=_closest_color_name, user_input = user_input)
 
 @app.route('/save_outfit', methods=['POST'])
 @login_required

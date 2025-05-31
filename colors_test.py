@@ -155,7 +155,12 @@ def generate_outfit_suggestions(wardrobe):
 
 def suggest_outfit_for_item(user_input, wardrobe):
     """
-    user_input: dict like { 'tops': (r, g, b) } — one key only
+    user_input: dict like {
+                            'id': item_id,
+                            'type': item_type,
+                            'rgb': item_rgb,
+                            'image': item_image
+                        }
     wardrobe:   dict with keys 'tops', 'pants', etc.
                 and values like: [ { 'rgb':…, 'image':… }, … ]
     returns: list of dicts like:
@@ -167,16 +172,8 @@ def suggest_outfit_for_item(user_input, wardrobe):
             'score':  float
         }
     """
-    if len(user_input) != 1:
-        print("Please provide exactly one clothing item and its color.")
-        return []
-
-    input_type, input_rgb = next(iter(user_input.items()))
+    
     valid_types = {"tops", "pants", "shoes", "jackets"}
-
-    if input_type not in valid_types:
-        print(f"Invalid clothing type: {input_type}. Must be one of {valid_types}.")
-        return []
 
     wardrobe_items = {t: wardrobe.get(t, []) for t in valid_types}
     has_jackets = bool(wardrobe_items["jackets"])
@@ -199,29 +196,29 @@ def suggest_outfit_for_item(user_input, wardrobe):
                 'score': score
             })
 
-    if input_type == "tops":
+    if user_input['type'] == "tops":
         for pant in wardrobe_items["pants"]:
             for shoe in wardrobe_items["shoes"]:
                 for jacket in jacket_options_with_none:
-                    top = {'rgb': input_rgb, 'image': None}
+                    top = {'rgb': user_input['rgb'], 'image': user_input['image']}
                     build_outfit(top, pant, shoe, jacket)
-    elif input_type == "pants":
+    elif user_input['type'] == "pants":
         for top in wardrobe_items["tops"]:
             for shoe in wardrobe_items["shoes"]:
                 for jacket in jacket_options_with_none:
-                    pant = {'rgb': input_rgb, 'image': None}
+                    pant = {'rgb': user_input['rgb'], 'image': user_input['image']}
                     build_outfit(top, pant, shoe, jacket)
-    elif input_type == "shoes":
+    elif user_input['type'] == "shoes":
         for top in wardrobe_items["tops"]:
             for pant in wardrobe_items["pants"]:
                 for jacket in jacket_options_with_none:
-                    shoe = {'rgb': input_rgb, 'image': None}
+                    shoe = {'rgb': user_input['rgb'], 'image': user_input['image']}
                     build_outfit(top, pant, shoe, jacket)
-    elif input_type == "jackets":
+    elif user_input['type'] == "jackets":
         for top in wardrobe_items["tops"]:
             for pant in wardrobe_items["pants"]:
                 for shoe in wardrobe_items["shoes"]:
-                    jacket = {'rgb': input_rgb, 'image': None}
+                    jacket = {'rgb': user_input['rgb'], 'image': user_input['image']}
                     build_outfit(top, pant, shoe, jacket)
 
     suggestions.sort(key=lambda o: o['score'], reverse=True)
@@ -266,11 +263,11 @@ def suggestions_for_item(user_input):
     :return: list of suggestions, each as a dict of id, item-type to RGB values, image
     """
 
-    input_type, input_rgb = next(iter(user_input.items()))
+    user_input['type'], user_input['rgb'] = next(iter(user_input.items()))
     
     valid_types = {"tops", "pants", "shoes", "jackets"}
-    if input_type not in valid_types:
-        raise ValueError(f"Invalid input_type: {input_type}. Must be one of {valid_types}.")
+    if user_input['type'] not in valid_types:
+        raise ValueError(f"Invalid user_input['type']: {user_input['type']}. Must be one of {valid_types}.")
 
     # These are example classic wardrobe-friendly colors per category
     sample_colors = {
@@ -325,17 +322,17 @@ def suggestions_for_item(user_input):
     palette = {}
     
     for t in all_types:
-        if t == input_type:
+        if t == user_input['type']:
             continue
         if t == 'jackets':
             palette[t] = sample_colors[t]
         else:
-            palette[t] = list(set(sample_colors[t] + generate_theory_colors(input_rgb)))
+            palette[t] = list(set(sample_colors[t] + generate_theory_colors(user_input['rgb'])))
 
-    jacket_options = palette['jackets'] + [None] if input_type != 'jackets' else [input_rgb, None]
-    tops_options = palette['tops'] if input_type != 'tops' else [input_rgb]
-    pants_options = palette['pants'] if input_type != 'pants' else [input_rgb]
-    shoes_options = palette['shoes'] if input_type != 'shoes' else [input_rgb]
+    jacket_options = palette['jackets'] + [None] if user_input['type'] != 'jackets' else [user_input['rgb'], None]
+    tops_options = palette['tops'] if user_input['type'] != 'tops' else [user_input['rgb']]
+    pants_options = palette['pants'] if user_input['type'] != 'pants' else [user_input['rgb']]
+    shoes_options = palette['shoes'] if user_input['type'] != 'shoes' else [user_input['rgb']]
 
     suggestions = []
     for top, pant, shoe, jacket in product(tops_options, pants_options, shoes_options, jacket_options):

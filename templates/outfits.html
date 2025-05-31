@@ -2,9 +2,7 @@
 {% block content %}
 <h2 class="mb-4">{{ 'Saved Outfits' if saved else 'Generated Outfits' }}</h2>
 {% if user_input %}
-  {% set input_type = user_input.keys() | list | first %}
-  {% set input_color = user_input[input_type] %}
-  <h3 class="mb-4">For: {{ input_type.capitalize() }} {{ closest_color_name(input_color) }}</h3>
+  <h3 class="mb-4">For: {{ user_input['type'].capitalize() }} {{ closest_color_name(user_input['rgb']) }}</h3>
 {% endif %}
 
 <div class="btn-group mb-3" role="group" aria-label="Filter Outfits">
