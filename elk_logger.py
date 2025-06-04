@@ -2,7 +2,7 @@ from elasticsearch import Elasticsearch
 from datetime import datetime
 
 # Set up Elasticsearch connection
-es = Elasticsearch("http://localhost:9200")
+es = Elasticsearch("http://elasticsearch:9200")
 
 def log_outfit_to_elasticsearch(outfit: dict, user: dict = None):
     doc = {
@@ -18,3 +18,16 @@ def log_outfit_to_elasticsearch(outfit: dict, user: dict = None):
         es.index(index="outfit-logs", document=doc)
     except Exception as e:
         print(f"[ELK] Error logging outfit: {e}")
+
+def log_login_to_elasticsearch(user=None, ip=None):
+    doc = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "user_username": user.username,
+        "user_email": user.email,
+        "user_ip": ip,
+    }
+    
+    try:
+        es.index(index="login-logs", document=doc)
+    except Exception as e:
+        print(f"[ELK] Error logging user: {e}")

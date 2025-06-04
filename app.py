@@ -14,7 +14,7 @@ from colors_test import suggestions_for_item, suggest_outfit_for_item, get_domin
 from PIL import Image
 import random
 from datetime import date
-from elk_logger import log_outfit_to_elasticsearch
+from elk_logger import log_outfit_to_elasticsearch, log_login_to_elasticsearch
 
 load_dotenv()
 
@@ -120,6 +120,13 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def get_ip():
+    if request.headers.get('X-Forwarded-For'):
+        ip = request.headers.get('X-Forwarded-For').split((',')[0])
+    else:
+        ip = request.remote_addr
+    return ip
+
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("10 per hour", methods=['POST'])
 def login():
@@ -138,7 +145,8 @@ def login():
                 wardrobe_id=wardrobe_id,
                 profile_pic=info[5]
             )
-
+            log_login_to_elasticsearch(user=user, ip= get_ip())
+            
             session['user'] = user.to_dict()
             flash(f"Logged in as {user.username}.", "info")
             return redirect(url_for('home'))
