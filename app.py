@@ -23,7 +23,7 @@ app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config.update(
     # SESSION_COOKIE_SECURE=True,
-    SESSION_COOKIE_DOMAIN= '192.168.1.22',    # LAN Domain for cross device acces
+    SESSION_COOKIE_DOMAIN= '172.20.10.7',    # LAN Domain for cross device acces
     SESSION_COOKIE_HTTPONLY=True,    # Prevent JS access
     SESSION_COOKIE_SAMESITE='Lax',   # CSRF protection
     PERMANENT_SESSION_LIFETIME=timedelta(days=30),  # For remember me
@@ -145,7 +145,7 @@ def login():
                 wardrobe_id=wardrobe_id,
                 profile_pic=info[5]
             )
-            log_login_to_elasticsearch(user=user, ip= get_ip())
+            # log_login_to_elasticsearch(user=user, ip= get_ip())
             
             session['user'] = user.to_dict()
             flash(f"Logged in as {user.username}.", "info")
@@ -249,7 +249,24 @@ def wardrobe():
     items = fetch_wardrobe_items(user.wardrobe_id)
     return render_template('wardrobe.html', items=items, username=user.username, closest_color_name=_closest_color_name)
 
-
+@app.route('/item/<int:item_id>')
+@login_required
+def item(item_id):
+    wardrobe = fetch_wardrobe_items(session['user']['wardrobe_id'])
+    item_chosen = {}
+    for item_type, items in wardrobe.items():
+        for item in items:
+            if item['id'] == item_id:
+                item_chosen = {
+                        'id': item_id,
+                        'type': item_type,
+                        'rgb': item['rgb'],
+                        'image': item['image']
+                    }
+    outfits = suggest_outfit_for_item(item_chosen, wardrobe)
+    suggestions = suggestions_for_item({item_chosen['type']: item_chosen['rgb']})
+    return render_template('item.html', item=item_chosen, outfits= outfits, suggestions=suggestions, closest_color_name=_closest_color_name)
+    
 @app.route('/upload', methods=['POST'])
 @login_required
 def upload():
@@ -306,11 +323,11 @@ def delete(item_id):
 def generate():
     wardrobe = fetch_wardrobe_items(session['user']['wardrobe_id'])
     outfits = generate_outfit_suggestions(wardrobe)
-    for outfit in outfits:
-        log_outfit_to_elasticsearch(outfit, session.get('user'))
+    # for outfit in outfits:
+    #     log_outfit_to_elasticsearch(outfit, session.get('user'))
     return render_template('outfits.html', outfits=outfits, closest_color_name= _closest_color_name)
 
-@app.route('/generate-item/<int:item_id>', methods=['POST'])
+@app.route('/generate-item/<int:item_id>', methods=['GET', 'POST'])
 @login_required
 def generate_item(item_id):
     

@@ -12,7 +12,7 @@ DB_USER = os.getenv('DB_USER')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
 
 DB_CONFIG = {
-    'host': "host.docker.internal",
+    'host': DB_HOST,
     'port': DB_PORT,
     'dbname': DB_NAME,
     'user': DB_USER,
