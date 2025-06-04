@@ -382,7 +382,7 @@ def suggestions(item_id):
     
     suggestions = suggestions_for_item(user_input)
     
-    return render_template('suggestions.html', suggestions=suggestions, closest_color_name=_closest_color_name, user_input = user_input)
+    return render_template('suggestions.html', suggestions=suggestions, closest_color_name=_closest_color_name, user_input= user_input)
 
 @app.route('/save_outfit', methods=['POST'])
 @login_required

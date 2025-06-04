@@ -200,25 +200,25 @@ def suggest_outfit_for_item(user_input, wardrobe):
         for pant in wardrobe_items["pants"]:
             for shoe in wardrobe_items["shoes"]:
                 for jacket in jacket_options_with_none:
-                    top = {'rgb': user_input['rgb'], 'image': user_input['image']}
+                    top = {'id': user_input['id'], 'rgb': user_input['rgb'], 'image': user_input['image']}
                     build_outfit(top, pant, shoe, jacket)
     elif user_input['type'] == "pants":
         for top in wardrobe_items["tops"]:
             for shoe in wardrobe_items["shoes"]:
                 for jacket in jacket_options_with_none:
-                    pant = {'rgb': user_input['rgb'], 'image': user_input['image']}
+                    pant = {'id': user_input['id'], 'rgb': user_input['rgb'], 'image': user_input['image']}
                     build_outfit(top, pant, shoe, jacket)
     elif user_input['type'] == "shoes":
         for top in wardrobe_items["tops"]:
             for pant in wardrobe_items["pants"]:
                 for jacket in jacket_options_with_none:
-                    shoe = {'rgb': user_input['rgb'], 'image': user_input['image']}
+                    shoe = {'id': user_input['id'], 'rgb': user_input['rgb'], 'image': user_input['image']}
                     build_outfit(top, pant, shoe, jacket)
     elif user_input['type'] == "jackets":
         for top in wardrobe_items["tops"]:
             for pant in wardrobe_items["pants"]:
                 for shoe in wardrobe_items["shoes"]:
-                    jacket = {'rgb': user_input['rgb'], 'image': user_input['image']}
+                    jacket = {'id': user_input['id'], 'rgb': user_input['rgb'], 'image': user_input['image']}
                     build_outfit(top, pant, shoe, jacket)
 
     suggestions.sort(key=lambda o: o['score'], reverse=True)

@@ -26,27 +26,27 @@
 
         {% if o.jacket %}
         <div>
-          <img src="{{ url_for('static', filename='uploads/' ~ o.jacket.image) }}"
-              alt="Jacket" class="img-thumbnail shadow-sm" style="max-height: 180px;">
+          <a href="{{ url_for('item', item_id=o.jacket.id) }}"><img src="{{ url_for('static', filename='uploads/' ~ o.jacket.image) }}"
+              alt="Jacket" class="img-thumbnail shadow-sm" style="max-height: 180px;"></a>
           <p class="mt-2 text-muted">Jacket</p>
         </div>
         {% endif %}
 
         <div>
-          <img src="{{ url_for('static', filename='uploads/' ~ o.top.image) }}"
-              alt="Top" class="img-thumbnail shadow-sm" style="max-height: 180px;">
+          <a href="{{ url_for('item', item_id=o.top.id) }}"><img src="{{ url_for('static', filename='uploads/' ~ o.top.image) }}"
+              alt="Top" class="img-thumbnail shadow-sm" style="max-height: 180px;"></a>
           <p class="mt-2 text-muted">Top</p>
         </div>
 
         <div>
-          <img src="{{ url_for('static', filename='uploads/' ~ o.pants.image) }}"
-              alt="Pants" class="img-thumbnail shadow-sm" style="max-height: 180px;">
+          <a href="{{ url_for('item', item_id=o.pants.id) }}"><img src="{{ url_for('static', filename='uploads/' ~ o.pants.image) }}"
+              alt="Pants" class="img-thumbnail shadow-sm" style="max-height: 180px;"></a>
           <p class="mt-2 text-muted">Pants</p>
         </div>
 
         <div>
-          <img src="{{ url_for('static', filename='uploads/' ~ o.shoes.image) }}"
-              alt="Shoes" class="img-thumbnail shadow-sm" style="max-height: 180px;">
+          <a href="{{ url_for('item', item_id=o.shoes.id) }}"><img src="{{ url_for('static', filename='uploads/' ~ o.shoes.image) }}"
+              alt="Shoes" class="img-thumbnail shadow-sm" style="max-height: 180px;"></a>
           <p class="mt-2 text-muted">Shoes</p>
         </div>
 
