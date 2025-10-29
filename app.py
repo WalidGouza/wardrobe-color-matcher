@@ -14,7 +14,6 @@ from colors_test import suggestions_for_item, suggest_outfit_for_item, get_domin
 from PIL import Image
 import random
 from datetime import date
-from elk_logger import log_outfit_to_elasticsearch, log_login_to_elasticsearch
 
 load_dotenv()
 
@@ -23,7 +22,7 @@ app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config.update(
     # SESSION_COOKIE_SECURE=True,
-    SESSION_COOKIE_DOMAIN= '172.20.10.7',    # LAN Domain for cross device acces
+    SESSION_COOKIE_DOMAIN= '127.0.0.1',    # LAN Domain for cross device acces
     SESSION_COOKIE_HTTPONLY=True,    # Prevent JS access
     SESSION_COOKIE_SAMESITE='Lax',   # CSRF protection
     PERMANENT_SESSION_LIFETIME=timedelta(days=30),  # For remember me
@@ -145,7 +144,6 @@ def login():
                 wardrobe_id=wardrobe_id,
                 profile_pic=info[5]
             )
-            # log_login_to_elasticsearch(user=user, ip= get_ip())
             
             session['user'] = user.to_dict()
             flash(f"Logged in as {user.username}.", "info")
